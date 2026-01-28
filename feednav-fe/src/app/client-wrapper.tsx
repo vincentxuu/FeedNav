@@ -10,6 +10,8 @@ export function ClientWrapper({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000,
+            retry: false, // API client 已有重試機制，避免雙重重試
+            refetchOnWindowFocus: false,
           },
         },
       })

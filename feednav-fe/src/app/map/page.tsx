@@ -17,7 +17,6 @@ import ActiveFilters from '@/components/ActiveFilters'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { LayoutGrid } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useAppFilters } from '@/hooks/useAppFilters'
 
 export default function MapPage() {
@@ -48,8 +47,8 @@ export default function MapPage() {
     queryFn: () => fetchRestaurants({ searchTerm, filters, sortBy }),
   })
 
-  const { favorites, isLoading: isLoadingFavorites } = useFavorites(session?.user?.id)
-  const { visited, isLoadingVisited } = useVisitedRestaurants(session?.user?.id)
+  const { favorites } = useFavorites(session?.user?.id)
+  const { visited } = useVisitedRestaurants(session?.user?.id)
 
   const { restaurants: filteredRestaurants } = useRestaurants({
     allRestaurants: restaurantsFromDB,
@@ -58,35 +57,6 @@ export default function MapPage() {
 
   const handleLogout = async () => {
     await logout()
-  }
-
-  const isLoading = isLoadingRestaurants || isLoadingFavorites || isLoadingVisited
-
-  const PageSkeleton = () => (
-    <div className="flex h-screen flex-col">
-      <div className="border-b p-4">
-        <Skeleton className="h-8 w-48" />
-      </div>
-      <div className="flex flex-grow">
-        <aside className="hidden w-96 space-y-6 border-r p-6 lg:block">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </aside>
-        <main className="relative flex-1">
-          <Skeleton className="absolute inset-0" />
-        </main>
-      </div>
-    </div>
-  )
-
-  if (isLoading) {
-    return <PageSkeleton />
-  }
-
-  if (restaurantsError) {
-    return <div>Error loading restaurants.</div>
   }
 
   return (
