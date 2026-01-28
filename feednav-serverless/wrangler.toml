@@ -1,27 +1,98 @@
 name = "feednav-api"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
 
-[env.production]
-vars = { 
-  ENVIRONMENT = "production", 
-  BCRYPT_ROUNDS = "10",
-  FRONTEND_URL = "https://your-domain.com"
-}
+# Cloudflare 帳號 ID (可選，如果使用 CLOUDFLARE_ACCOUNT_ID 環境變數則不需要)
+# account_id = "your-account-id"
+
+# ============================================
+# 本地開發 (Default)
+# ============================================
+[vars]
+ENVIRONMENT = "development"
+CORS_ORIGIN = "http://localhost:3000,http://localhost:5173"
+JWT_ISSUER = "feednav-api"
+BCRYPT_ROUNDS = "10"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "feednav-db"
-# database_id = "your-database-id" # Will be filled after creating database
+database_name = "feednav-db-preview"
+database_id = "a42240cc-fb03-41df-93e1-73c1ea390de6"
+migrations_dir = "migrations"
 
 [[kv_namespaces]]
-binding = "KV"
-# id = "your-kv-namespace-id" # Will be filled after creating KV namespace
+binding = "CACHE"
+id = "99df37d3f37740dcbca5587825ff28f6"
 
 [[r2_buckets]]
-binding = "R2"
-bucket_name = "feednav-assets"
+binding = "STORAGE"
+bucket_name = "feednav-storage-preview"
 
-[env.production.routes]
-# pattern = "api.feednav.com/*"
-# zone_name = "feednav.com"
+# ============================================
+# 測試環境 (Preview)
+# ============================================
+[env.preview]
+name = "feednav-api-preview"
+
+[[env.preview.routes]]
+pattern = "api-preview.feednav.cc/*"
+zone_name = "feednav.cc"
+
+[env.preview.vars]
+ENVIRONMENT = "preview"
+CORS_ORIGIN = "https://preview.feednav.cc,http://localhost:3000,http://localhost:5173"
+JWT_ISSUER = "feednav-api"
+BCRYPT_ROUNDS = "10"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "feednav-db-preview"
+database_id = "a42240cc-fb03-41df-93e1-73c1ea390de6"
+migrations_dir = "migrations"
+
+[[env.preview.kv_namespaces]]
+binding = "CACHE"
+id = "99df37d3f37740dcbca5587825ff28f6"
+
+[[env.preview.r2_buckets]]
+binding = "STORAGE"
+bucket_name = "feednav-storage-preview"
+
+[[env.preview.analytics_engine_datasets]]
+binding = "ACCESS_LOGS"
+dataset = "feednav_access_logs_preview"
+
+# ============================================
+# 正式環境 (Production)
+# ============================================
+[env.production]
+name = "feednav-api-production"
+
+[[env.production.routes]]
+pattern = "api.feednav.cc/*"
+zone_name = "feednav.cc"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+CORS_ORIGIN = "https://feednav.cc,https://www.feednav.cc"
+JWT_ISSUER = "feednav-api"
+BCRYPT_ROUNDS = "12"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "feednav-db"
+database_id = "731d12ce-d253-4d80-a499-48df9846eb5d"
+migrations_dir = "migrations"
+
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "c600afcb8be24264ac5b00f64ce9d517"
+
+[[env.production.r2_buckets]]
+binding = "STORAGE"
+bucket_name = "feednav-storage"
+
+[[env.production.analytics_engine_datasets]]
+binding = "ACCESS_LOGS"
+dataset = "feednav_access_logs"
