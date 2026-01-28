@@ -101,9 +101,7 @@ export class VisitService {
         total_visited: stats.total_visited,
         districts_visited: stats.districts_visited,
         cuisines_tried: stats.cuisines_tried,
-        avg_rating: stats.avg_rating
-          ? Math.round(Number(stats.avg_rating) * 10) / 10
-          : 0,
+        avg_rating: stats.avg_rating ? Math.round(Number(stats.avg_rating) * 10) / 10 : 0,
         budget_friendly: stats.budget_friendly,
         high_end: stats.high_end,
       },

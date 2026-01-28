@@ -39,7 +39,9 @@ export function clearToken(): void {
 export function getRefreshToken(): string | undefined {
   return (
     Cookies.get(REFRESH_TOKEN_KEY) ||
-    (typeof window !== 'undefined' ? localStorage.getItem(REFRESH_TOKEN_KEY) || undefined : undefined)
+    (typeof window !== 'undefined'
+      ? localStorage.getItem(REFRESH_TOKEN_KEY) || undefined
+      : undefined)
   )
 }
 

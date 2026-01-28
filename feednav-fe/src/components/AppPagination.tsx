@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React from 'react';
+import React from 'react'
 import {
   Pagination,
   PaginationContent,
@@ -8,53 +8,58 @@ import {
   PaginationNext,
   PaginationPrevious,
   PaginationEllipsis,
-} from "@/components/ui/pagination"
+} from '@/components/ui/pagination'
 
 interface AppPaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  className?: string;
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+  className?: string
 }
 
-export const AppPagination = ({ currentPage, totalPages, onPageChange, className }: AppPaginationProps) => {
+export const AppPagination = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+  className,
+}: AppPaginationProps) => {
   if (totalPages <= 1) {
-    return null;
+    return null
   }
 
   const handlePageClick = (e: React.MouseEvent, page: number) => {
-    e.preventDefault();
-    onPageChange(page);
-  };
+    e.preventDefault()
+    onPageChange(page)
+  }
 
-  const pageNumbers = [];
-  const MAX_PAGES_SHOWN = 5;
-  const HALF_PAGES_SHOWN = Math.floor(MAX_PAGES_SHOWN / 2);
+  const pageNumbers = []
+  const MAX_PAGES_SHOWN = 5
+  const HALF_PAGES_SHOWN = Math.floor(MAX_PAGES_SHOWN / 2)
 
   if (totalPages <= MAX_PAGES_SHOWN + 2) {
     for (let i = 1; i <= totalPages; i++) {
-      pageNumbers.push(i);
+      pageNumbers.push(i)
     }
   } else if (currentPage <= HALF_PAGES_SHOWN + 1) {
     for (let i = 1; i <= MAX_PAGES_SHOWN; i++) {
-      pageNumbers.push(i);
+      pageNumbers.push(i)
     }
-    pageNumbers.push('...');
-    pageNumbers.push(totalPages);
+    pageNumbers.push('...')
+    pageNumbers.push(totalPages)
   } else if (currentPage >= totalPages - HALF_PAGES_SHOWN) {
-    pageNumbers.push(1);
-    pageNumbers.push('...');
+    pageNumbers.push(1)
+    pageNumbers.push('...')
     for (let i = totalPages - MAX_PAGES_SHOWN + 1; i <= totalPages; i++) {
-      pageNumbers.push(i);
+      pageNumbers.push(i)
     }
   } else {
-    pageNumbers.push(1);
-    pageNumbers.push('...');
+    pageNumbers.push(1)
+    pageNumbers.push('...')
     for (let i = currentPage - HALF_PAGES_SHOWN + 1; i <= currentPage + HALF_PAGES_SHOWN - 1; i++) {
-      pageNumbers.push(i);
+      pageNumbers.push(i)
     }
-    pageNumbers.push('...');
-    pageNumbers.push(totalPages);
+    pageNumbers.push('...')
+    pageNumbers.push(totalPages)
   }
 
   return (
@@ -91,5 +96,5 @@ export const AppPagination = ({ currentPage, totalPages, onPageChange, className
         </PaginationItem>
       </PaginationContent>
     </Pagination>
-  );
-};
+  )
+}

@@ -46,10 +46,7 @@ export interface PaginationParams {
 export class VisitRepository {
   constructor(private db: D1Database) {}
 
-  async getByUserId(
-    userId: string,
-    pagination: PaginationParams
-  ): Promise<VisitRow[]> {
+  async getByUserId(userId: string, pagination: PaginationParams): Promise<VisitRow[]> {
     const offset = (pagination.page - 1) * pagination.limit
 
     const result = await this.db
@@ -78,9 +75,7 @@ export class VisitRepository {
 
   async count(userId: string): Promise<number> {
     const result = await this.db
-      .prepare(
-        'SELECT COUNT(*) as total FROM user_visited_restaurants WHERE user_id = ?'
-      )
+      .prepare('SELECT COUNT(*) as total FROM user_visited_restaurants WHERE user_id = ?')
       .bind(userId)
       .first<{ total: number }>()
     return result?.total || 0
@@ -88,18 +83,14 @@ export class VisitRepository {
 
   async add(userId: string, restaurantId: number): Promise<void> {
     await this.db
-      .prepare(
-        'INSERT INTO user_visited_restaurants (user_id, restaurant_id) VALUES (?, ?)'
-      )
+      .prepare('INSERT INTO user_visited_restaurants (user_id, restaurant_id) VALUES (?, ?)')
       .bind(userId, restaurantId)
       .run()
   }
 
   async remove(userId: string, restaurantId: number): Promise<number> {
     const result = await this.db
-      .prepare(
-        'DELETE FROM user_visited_restaurants WHERE user_id = ? AND restaurant_id = ?'
-      )
+      .prepare('DELETE FROM user_visited_restaurants WHERE user_id = ? AND restaurant_id = ?')
       .bind(userId, restaurantId)
       .run()
     return result.meta.changes
@@ -107,18 +98,13 @@ export class VisitRepository {
 
   async exists(userId: string, restaurantId: number): Promise<boolean> {
     const result = await this.db
-      .prepare(
-        'SELECT 1 FROM user_visited_restaurants WHERE user_id = ? AND restaurant_id = ?'
-      )
+      .prepare('SELECT 1 FROM user_visited_restaurants WHERE user_id = ? AND restaurant_id = ?')
       .bind(userId, restaurantId)
       .first()
     return !!result
   }
 
-  async getOne(
-    userId: string,
-    restaurantId: number
-  ): Promise<UserVisited | null> {
+  async getOne(userId: string, restaurantId: number): Promise<UserVisited | null> {
     const result = await this.db
       .prepare(
         'SELECT id, user_id, restaurant_id, created_at FROM user_visited_restaurants WHERE user_id = ? AND restaurant_id = ?'

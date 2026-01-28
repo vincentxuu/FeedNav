@@ -120,10 +120,7 @@ async function nearby(c: Context<AppEnv>) {
     }
 
     const restaurantService = createRestaurantService(c.env)
-    const restaurants = await restaurantService.getNearby(
-      { lat, lng, radius, limit },
-      userId
-    )
+    const restaurants = await restaurantService.getNearby({ lat, lng, radius, limit }, userId)
 
     return c.json({
       success: true,

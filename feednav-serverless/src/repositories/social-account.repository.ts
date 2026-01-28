@@ -23,9 +23,7 @@ export class SocialAccountRepository {
     providerId: string
   ): Promise<SocialAccount | null> {
     const result = await this.db
-      .prepare(
-        'SELECT * FROM social_accounts WHERE provider = ? AND provider_id = ?'
-      )
+      .prepare('SELECT * FROM social_accounts WHERE provider = ? AND provider_id = ?')
       .bind(provider, providerId)
       .first<SocialAccount>()
     return result
@@ -69,12 +67,7 @@ export class SocialAccountRepository {
          SET provider_email = ?, provider_name = ?, provider_avatar = ?, updated_at = datetime('now')
          WHERE id = ?`
       )
-      .bind(
-        data.providerEmail,
-        data.providerName,
-        data.providerAvatar || null,
-        id
-      )
+      .bind(data.providerEmail, data.providerName, data.providerAvatar || null, id)
       .run()
   }
 

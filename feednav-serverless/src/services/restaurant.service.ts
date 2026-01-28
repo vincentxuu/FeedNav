@@ -1,9 +1,5 @@
 import type { Env, Restaurant, Tag, PaginationInfo } from '../types'
-import {
-  createRestaurantRepository,
-  RestaurantRepository,
-  SearchFilters,
-} from '../repositories'
+import { createRestaurantRepository, RestaurantRepository, SearchFilters } from '../repositories'
 import { mapToRestaurant, mapToRestaurants } from '../mappers'
 
 export interface SearchResult {
@@ -63,13 +59,7 @@ export class RestaurantService {
     const { lat, lng, radius = 5, limit = 10 } = params
     const safeLimit = Math.min(limit, 50)
 
-    const rows = await this.restaurantRepo.getNearby(
-      lat,
-      lng,
-      radius,
-      safeLimit,
-      userId
-    )
+    const rows = await this.restaurantRepo.getNearby(lat, lng, radius, safeLimit, userId)
 
     return mapToRestaurants(rows, {
       userId,

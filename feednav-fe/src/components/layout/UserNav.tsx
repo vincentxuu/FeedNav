@@ -1,6 +1,6 @@
-"use client";
+'use client'
 
-import type { Session } from "@/types";
+import type { Session } from '@/types'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,17 +8,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { User, LogOut, Heart, Footprints } from "lucide-react";
-import { UserFavorite, UserVisitedRestaurant } from "@/types";
-import Link from "next/link";
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+import { User, LogOut, Heart, Footprints } from 'lucide-react'
+import { UserFavorite, UserVisitedRestaurant } from '@/types'
+import Link from 'next/link'
 
 interface UserNavProps {
-  session: Session;
-  handleLogout: () => void;
-  favorites: UserFavorite[];
-  visited: UserVisitedRestaurant[];
+  session: Session
+  handleLogout: () => void
+  favorites: UserFavorite[]
+  visited: UserVisitedRestaurant[]
 }
 
 const UserNav = ({
@@ -64,7 +64,7 @@ const UserNav = ({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-};
+  )
+}
 
-export default UserNav;
+export default UserNav

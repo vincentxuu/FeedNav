@@ -1,25 +1,25 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, ImageOff } from "lucide-react";
-import RestaurantHeader from "@/components/restaurant/RestaurantHeader";
-import RestaurantInfo from "@/components/restaurant/RestaurantInfo";
-import RestaurantMapSection from "@/components/restaurant/RestaurantMapSection";
-import SimilarRestaurants from "@/components/restaurant/SimilarRestaurants";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import RestaurantDetailSkeleton from "@/components/restaurant/RestaurantDetailSkeleton";
-import RestaurantNotFound from "@/components/restaurant/RestaurantNotFound";
-import { useRestaurantDetail } from "@/hooks/useRestaurantDetail";
-import { useState, use } from "react";
+import Link from 'next/link'
+import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, ImageOff } from 'lucide-react'
+import RestaurantHeader from '@/components/restaurant/RestaurantHeader'
+import RestaurantInfo from '@/components/restaurant/RestaurantInfo'
+import RestaurantMapSection from '@/components/restaurant/RestaurantMapSection'
+import SimilarRestaurants from '@/components/restaurant/SimilarRestaurants'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import RestaurantDetailSkeleton from '@/components/restaurant/RestaurantDetailSkeleton'
+import RestaurantNotFound from '@/components/restaurant/RestaurantNotFound'
+import { useRestaurantDetail } from '@/hooks/useRestaurantDetail'
+import { useState, use } from 'react'
 
 interface RestaurantDetailPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>
 }
 
 export default function RestaurantDetailPage({ params }: RestaurantDetailPageProps) {
-  const { id } = use(params);
+  const { id } = use(params)
   const {
     restaurant,
     similarRestaurants,
@@ -32,36 +32,36 @@ export default function RestaurantDetailPage({ params }: RestaurantDetailPagePro
     isMutatingVisited,
     toggleFavorite,
     toggleVisited,
-  } = useRestaurantDetail(id);
-  const [imageError, setImageError] = useState(false);
+  } = useRestaurantDetail(id)
+  const [imageError, setImageError] = useState(false)
 
   const handleImageError = () => {
-    setImageError(true);
-  };
+    setImageError(true)
+  }
 
   const handleHeaderToggleFavorite = () => {
-    if (!restaurant) return;
-    toggleFavorite(parseInt(restaurant.id, 10), isFavorited);
+    if (!restaurant) return
+    toggleFavorite(parseInt(restaurant.id, 10), isFavorited)
   }
 
   const handleHeaderToggleVisited = () => {
-    if (!restaurant) return;
-    toggleVisited(parseInt(restaurant.id, 10), isVisited);
+    if (!restaurant) return
+    toggleVisited(parseInt(restaurant.id, 10), isVisited)
   }
 
   if (isLoading) {
-    return <RestaurantDetailSkeleton />;
+    return <RestaurantDetailSkeleton />
   }
 
   if (error) {
-    return <div className="text-center py-16 text-destructive">無法載入餐廳資料。</div>;
+    return <div className="py-16 text-center text-destructive">無法載入餐廳資料。</div>
   }
 
   if (!restaurant) {
-    return <RestaurantNotFound />;
+    return <RestaurantNotFound />
   }
 
-  const hasCoordinates = restaurant.latitude != null && restaurant.longitude != null;
+  const hasCoordinates = restaurant.latitude != null && restaurant.longitude != null
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -74,11 +74,11 @@ export default function RestaurantDetailPage({ params }: RestaurantDetailPagePro
         </Button>
       </header>
       <main className="container pb-16">
-        <div className="max-w-3xl mx-auto">
-          <div className="w-full h-64 md:h-80 rounded-lg overflow-hidden shadow-lg mb-8 bg-muted">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-8 h-64 w-full overflow-hidden rounded-lg bg-muted shadow-lg md:h-80">
             {imageError ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageOff className="w-16 h-16 text-muted-foreground" />
+              <div className="flex h-full w-full items-center justify-center">
+                <ImageOff className="h-16 w-16 text-muted-foreground" />
               </div>
             ) : (
               <Image
@@ -86,7 +86,7 @@ export default function RestaurantDetailPage({ params }: RestaurantDetailPagePro
                 alt={restaurant.name}
                 width={800}
                 height={320}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
                 onError={handleImageError}
                 unoptimized
               />
@@ -94,19 +94,19 @@ export default function RestaurantDetailPage({ params }: RestaurantDetailPagePro
           </div>
 
           <div className="mb-8">
-              <RestaurantHeader
-                restaurant={restaurant}
-                session={session}
-                isFavorited={isFavorited}
-                isMutating={isMutating}
-                onToggleFavorite={handleHeaderToggleFavorite}
-                isVisited={isVisited}
-                isMutatingVisited={isMutatingVisited}
-                onToggleVisited={handleHeaderToggleVisited}
-              />
+            <RestaurantHeader
+              restaurant={restaurant}
+              session={session}
+              isFavorited={isFavorited}
+              isMutating={isMutating}
+              onToggleFavorite={handleHeaderToggleFavorite}
+              isVisited={isVisited}
+              isMutatingVisited={isMutatingVisited}
+              onToggleVisited={handleHeaderToggleVisited}
+            />
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-12 items-start">
+          <div className="grid items-start gap-8 md:grid-cols-3 lg:gap-12">
             <div className="md:col-span-2">
               <Card>
                 <CardHeader>
@@ -119,11 +119,11 @@ export default function RestaurantDetailPage({ params }: RestaurantDetailPagePro
             </div>
             {hasCoordinates && (
               <div className="h-full">
-                <Card className="overflow-hidden h-full flex flex-col">
+                <Card className="flex h-full flex-col overflow-hidden">
                   <CardHeader>
                     <CardTitle>餐廳位置</CardTitle>
                   </CardHeader>
-                  <CardContent className="p-0 flex-grow">
+                  <CardContent className="flex-grow p-0">
                     <RestaurantMapSection restaurant={restaurant} />
                   </CardContent>
                 </Card>
@@ -142,5 +142,5 @@ export default function RestaurantDetailPage({ params }: RestaurantDetailPagePro
         </div>
       </main>
     </div>
-  );
+  )
 }

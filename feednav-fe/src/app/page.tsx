@@ -1,26 +1,26 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/ui/use-toast";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useToast } from '@/components/ui/use-toast'
 
-import { useAuthSession } from "@/hooks/useAuthSession";
-import { useHomePageData } from "@/hooks/useHomePageData";
+import { useAuthSession } from '@/hooks/useAuthSession'
+import { useHomePageData } from '@/hooks/useHomePageData'
 
-import Header from "@/components/layout/Header";
-import RestaurantGrid from "@/components/RestaurantGrid";
-import ActiveFilters from "@/components/ActiveFilters";
-import RandomSelectorModal from "@/components/RandomSelectorModal";
-import HeroSection from "@/components/HeroSection";
-import CuratedSections from "@/components/CuratedSections";
-import NearbyRestaurants from "@/components/NearbyRestaurants";
-import { AppPagination } from "@/components/AppPagination";
-import type { Restaurant, UserVisitedRestaurant } from "@/types";
+import Header from '@/components/layout/Header'
+import RestaurantGrid from '@/components/RestaurantGrid'
+import ActiveFilters from '@/components/ActiveFilters'
+import RandomSelectorModal from '@/components/RandomSelectorModal'
+import HeroSection from '@/components/HeroSection'
+import CuratedSections from '@/components/CuratedSections'
+import NearbyRestaurants from '@/components/NearbyRestaurants'
+import { AppPagination } from '@/components/AppPagination'
+import type { Restaurant, UserVisitedRestaurant } from '@/types'
 
 export default function Home() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const { session, logout } = useAuthSession();
+  const router = useRouter()
+  const { toast } = useToast()
+  const { session, logout } = useAuthSession()
 
   const {
     searchTerm,
@@ -49,36 +49,41 @@ export default function Home() {
     filteredRestaurants,
     isMutatingVisited,
     handleToggleVisited,
-  } = useHomePageData(session);
+  } = useHomePageData(session)
 
-  const [isRandomSelectorOpen, setRandomSelectorOpen] = useState(false);
-  const [restaurantsForRandomSelect, setRestaurantsForRandomSelect] = useState<(Restaurant & { distance?: number })[]>([]);
+  const [isRandomSelectorOpen, setRandomSelectorOpen] = useState(false)
+  const [restaurantsForRandomSelect, setRestaurantsForRandomSelect] = useState<
+    (Restaurant & { distance?: number })[]
+  >([])
 
   const openRandomSelector = (restaurants: (Restaurant & { distance?: number })[]) => {
     if (restaurants && restaurants.length > 0) {
-      setRestaurantsForRandomSelect(restaurants);
-      setRandomSelectorOpen(true);
+      setRestaurantsForRandomSelect(restaurants)
+      setRandomSelectorOpen(true)
     } else {
       toast({
-        title: "沒有可選的餐廳",
-        description: "請嘗試放寬您的篩選條件。",
-      });
+        title: '沒有可選的餐廳',
+        description: '請嘗試放寬您的篩選條件。',
+      })
     }
-  };
+  }
 
   const handleHeaderRandomSelect = () => {
-    openRandomSelector(filteredRestaurants);
-  };
+    openRandomSelector(filteredRestaurants)
+  }
 
   const handleHeroRandomSelect = () => {
-    const selectionPool = (nearbyRestaurants && nearbyRestaurants.length > 0) ? nearbyRestaurants : (filteredRestaurants || []);
-    openRandomSelector(selectionPool);
-  };
+    const selectionPool =
+      nearbyRestaurants && nearbyRestaurants.length > 0
+        ? nearbyRestaurants
+        : filteredRestaurants || []
+    openRandomSelector(selectionPool)
+  }
 
   const handleLogout = async () => {
-    await logout();
-    router.push('/');
-  };
+    await logout()
+    router.push('/')
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -123,7 +128,7 @@ export default function Home() {
             />
           </>
         )}
-        <div id="main-content" className="container py-8 scroll-mt-20">
+        <div id="main-content" className="container scroll-mt-20 py-8">
           <ActiveFilters
             filters={filters}
             showOnlyFavorites={false}
@@ -155,5 +160,5 @@ export default function Home() {
         restaurants={restaurantsForRandomSelect}
       />
     </div>
-  );
+  )
 }

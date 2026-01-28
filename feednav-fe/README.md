@@ -35,21 +35,26 @@
 ### 安裝步驟
 
 1. 複製專案
+
 ```bash
 git clone <repository-url>
 cd feednav-fe
 ```
 
 2. 安裝依賴
+
 ```bash
 npm install
 ```
 
 3. 設置環境變數
+
 ```bash
 cp .env.local.example .env.local
 ```
+
 編輯 `.env.local` 並填入你的 API 配置：
+
 ```
 NEXT_PUBLIC_API_URL=https://your-worker.your-subdomain.workers.dev
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
@@ -57,6 +62,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 4. 啟動開發伺服器
+
 ```bash
 npm run dev
 ```
@@ -70,21 +76,25 @@ npm run dev
 ### 使用 OpenNext.js CLI
 
 1. 安裝依賴
+
 ```bash
 pnpm install
 ```
 
 2. 登入 Cloudflare
+
 ```bash
 npx wrangler login
 ```
 
 3. 本地預覽
+
 ```bash
 pnpm preview
 ```
 
 4. 部署到 Cloudflare Workers
+
 ```bash
 pnpm deploy
 ```
@@ -142,16 +152,19 @@ src/
 ## 特殊功能
 
 ### SSR 優化
+
 - 所有需要瀏覽器 API 的元件都使用客戶端渲染
 - 地圖元件支援動態載入以避免 SSR 問題
 - 適當的載入狀態處理
 
 ### 地圖功能
+
 - 使用 Leaflet 和 React Leaflet
 - 支援標記聚集
 - 響應式地圖設計
 
 ### 認證系統
+
 - 整合 FeedNav Serverless API 認證
 - 支援用戶註冊、登入、登出
 - OAuth 社交登入 (Google、Discord)

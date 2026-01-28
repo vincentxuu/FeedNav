@@ -1,16 +1,16 @@
 /* eslint-disable no-unused-vars */
-import React from 'react';
-import { Restaurant } from '@/types';
-import type { Session } from '@/types';
-import RestaurantCard from '@/components/RestaurantCard';
+import React from 'react'
+import { Restaurant } from '@/types'
+import type { Session } from '@/types'
+import RestaurantCard from '@/components/RestaurantCard'
 
 interface SimilarRestaurantsProps {
-  restaurants: Restaurant[];
-  session: Session | null;
-  onToggleFavorite: (restaurantId: number, isFavorited: boolean) => void;
-  isMutatingFavorite: boolean;
-  onToggleVisited: (restaurantId: number, isVisited: boolean) => void;
-  isMutatingVisited: boolean;
+  restaurants: Restaurant[]
+  session: Session | null
+  onToggleFavorite: (restaurantId: number, isFavorited: boolean) => void
+  isMutatingFavorite: boolean
+  onToggleVisited: (restaurantId: number, isVisited: boolean) => void
+  isMutatingVisited: boolean
 }
 
 const SimilarRestaurants: React.FC<SimilarRestaurantsProps> = ({
@@ -22,13 +22,16 @@ const SimilarRestaurants: React.FC<SimilarRestaurantsProps> = ({
   isMutatingVisited,
 }) => {
   if (restaurants.length === 0) {
-    return null;
+    return null
   }
 
   return (
-    <div className="mt-12 animate-fade-in" style={{ animationDelay: '1000ms', animationFillMode: 'backwards' }}>
-      <h2 className="text-2xl font-bold tracking-tight mb-6">您可能也會喜歡</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    <div
+      className="animate-fade-in mt-12"
+      style={{ animationDelay: '1000ms', animationFillMode: 'backwards' }}
+    >
+      <h2 className="mb-6 text-2xl font-bold tracking-tight">您可能也會喜歡</h2>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
         {restaurants.map((resto, index) => (
           <RestaurantCard
             key={resto.id}
@@ -43,7 +46,7 @@ const SimilarRestaurants: React.FC<SimilarRestaurantsProps> = ({
         ))}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default SimilarRestaurants;
+export default SimilarRestaurants

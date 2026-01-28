@@ -8,7 +8,8 @@ import {
 import { API_ENDPOINTS, RETRY_CONFIG } from './constants'
 import type { Restaurant } from '@/types'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://your-worker.your-subdomain.workers.dev'
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'https://your-worker.your-subdomain.workers.dev'
 
 export interface ApiResponse<T = unknown> {
   success: boolean

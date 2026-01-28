@@ -1,40 +1,40 @@
-"use client";
+'use client'
 
 /* eslint-disable no-unused-vars */
-import { useState, useEffect, useCallback } from "react";
-import { apiClient } from "@/lib/api-client";
-import { getToken, clearToken, setToken, setRefreshToken } from "@/lib/utils/tokenStorage";
-import type { Session } from "@/types";
+import { useState, useEffect, useCallback } from 'react'
+import { apiClient } from '@/lib/api-client'
+import { getToken, clearToken, setToken, setRefreshToken } from '@/lib/utils/tokenStorage'
+import type { Session } from '@/types'
 
 interface AuthResult {
-  success: boolean;
-  error?: string;
+  success: boolean
+  error?: string
 }
 
 interface UseAuthSessionReturn {
-  session: Session | null;
-  user: Session["user"] | undefined;
-  isLoading: boolean;
-  logout: () => Promise<void>;
-  login: (email: string, password: string) => Promise<AuthResult>;
-  register: (email: string, password: string) => Promise<AuthResult>;
-  refreshSession: () => Promise<void>;
+  session: Session | null
+  user: Session['user'] | undefined
+  isLoading: boolean
+  logout: () => Promise<void>
+  login: (email: string, password: string) => Promise<AuthResult>
+  register: (email: string, password: string) => Promise<AuthResult>
+  refreshSession: () => Promise<void>
 }
 
 export function useAuthSession(): UseAuthSessionReturn {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchCurrentUser = useCallback(async () => {
-    const token = getToken();
+    const token = getToken()
     if (!token) {
-      setSession(null);
-      setIsLoading(false);
-      return;
+      setSession(null)
+      setIsLoading(false)
+      return
     }
 
     try {
-      const response = await apiClient.getCurrentUser();
+      const response = await apiClient.getCurrentUser()
       if (response.success && response.data?.user) {
         setSession({
           user: {
@@ -43,37 +43,37 @@ export function useAuthSession(): UseAuthSessionReturn {
             name: response.data.user.name,
             avatar: response.data.user.avatar,
           },
-        });
+        })
       } else {
-        setSession(null);
+        setSession(null)
       }
     } catch {
-      setSession(null);
-      clearToken();
+      setSession(null)
+      clearToken()
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    fetchCurrentUser();
-  }, [fetchCurrentUser]);
+    fetchCurrentUser()
+  }, [fetchCurrentUser])
 
   const logout = useCallback(async () => {
     try {
-      await apiClient.logout();
+      await apiClient.logout()
     } finally {
-      setSession(null);
+      setSession(null)
     }
-  }, []);
+  }, [])
 
   const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     try {
-      const response = await apiClient.login(email, password);
+      const response = await apiClient.login(email, password)
       if (response.success && response.data) {
-        setToken(response.data.token);
+        setToken(response.data.token)
         if (response.data.refreshToken) {
-          setRefreshToken(response.data.refreshToken);
+          setRefreshToken(response.data.refreshToken)
         }
         setSession({
           user: {
@@ -82,22 +82,22 @@ export function useAuthSession(): UseAuthSessionReturn {
             name: response.data.user.name,
             avatar: response.data.user.avatar,
           },
-        });
-        return { success: true };
+        })
+        return { success: true }
       }
-      return { success: false, error: response.message || response.error };
+      return { success: false, error: response.message || response.error }
     } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : "登入失敗" };
+      return { success: false, error: err instanceof Error ? err.message : '登入失敗' }
     }
-  }, []);
+  }, [])
 
   const register = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     try {
-      const response = await apiClient.register(email, password);
+      const response = await apiClient.register(email, password)
       if (response.success && response.data) {
-        setToken(response.data.token);
+        setToken(response.data.token)
         if (response.data.refreshToken) {
-          setRefreshToken(response.data.refreshToken);
+          setRefreshToken(response.data.refreshToken)
         }
         setSession({
           user: {
@@ -106,18 +106,18 @@ export function useAuthSession(): UseAuthSessionReturn {
             name: response.data.user.name,
             avatar: response.data.user.avatar,
           },
-        });
-        return { success: true };
+        })
+        return { success: true }
       }
-      return { success: false, error: response.message || response.error };
+      return { success: false, error: response.message || response.error }
     } catch (err) {
-      return { success: false, error: err instanceof Error ? err.message : "註冊失敗" };
+      return { success: false, error: err instanceof Error ? err.message : '註冊失敗' }
     }
-  }, []);
+  }, [])
 
   const refreshSession = useCallback(async () => {
-    await fetchCurrentUser();
-  }, [fetchCurrentUser]);
+    await fetchCurrentUser()
+  }, [fetchCurrentUser])
 
   return {
     session,
@@ -127,7 +127,7 @@ export function useAuthSession(): UseAuthSessionReturn {
     login,
     register,
     refreshSession,
-  };
+  }
 }
 
-export default useAuthSession;
+export default useAuthSession

@@ -30,10 +30,7 @@ export interface PaginationParams {
 export class FavoriteRepository {
   constructor(private db: D1Database) {}
 
-  async getByUserId(
-    userId: string,
-    pagination: PaginationParams
-  ): Promise<FavoriteRow[]> {
+  async getByUserId(userId: string, pagination: PaginationParams): Promise<FavoriteRow[]> {
     const offset = (pagination.page - 1) * pagination.limit
 
     const result = await this.db
@@ -70,18 +67,14 @@ export class FavoriteRepository {
 
   async add(userId: string, restaurantId: number): Promise<void> {
     await this.db
-      .prepare(
-        'INSERT INTO user_favorites (user_id, restaurant_id) VALUES (?, ?)'
-      )
+      .prepare('INSERT INTO user_favorites (user_id, restaurant_id) VALUES (?, ?)')
       .bind(userId, restaurantId)
       .run()
   }
 
   async remove(userId: string, restaurantId: number): Promise<number> {
     const result = await this.db
-      .prepare(
-        'DELETE FROM user_favorites WHERE user_id = ? AND restaurant_id = ?'
-      )
+      .prepare('DELETE FROM user_favorites WHERE user_id = ? AND restaurant_id = ?')
       .bind(userId, restaurantId)
       .run()
     return result.meta.changes
@@ -89,18 +82,13 @@ export class FavoriteRepository {
 
   async exists(userId: string, restaurantId: number): Promise<boolean> {
     const result = await this.db
-      .prepare(
-        'SELECT 1 FROM user_favorites WHERE user_id = ? AND restaurant_id = ?'
-      )
+      .prepare('SELECT 1 FROM user_favorites WHERE user_id = ? AND restaurant_id = ?')
       .bind(userId, restaurantId)
       .first()
     return !!result
   }
 
-  async getOne(
-    userId: string,
-    restaurantId: number
-  ): Promise<UserFavorite | null> {
+  async getOne(userId: string, restaurantId: number): Promise<UserFavorite | null> {
     const result = await this.db
       .prepare(
         'SELECT id, user_id, restaurant_id, created_at FROM user_favorites WHERE user_id = ? AND restaurant_id = ?'

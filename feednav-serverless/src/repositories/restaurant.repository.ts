@@ -195,9 +195,7 @@ export class RestaurantRepository {
 
     if (filters.tags && filters.tags.length > 0) {
       countQuery += ` GROUP BY r.id`
-      const tagConditions = filters.tags
-        .map(() => `GROUP_CONCAT(t.name) LIKE ?`)
-        .join(' AND ')
+      const tagConditions = filters.tags.map(() => `GROUP_CONCAT(t.name) LIKE ?`).join(' AND ')
       countQuery += ` HAVING ${tagConditions}`
       filters.tags.forEach((tag) => countParams.push(`%${tag}%`))
       countQuery = `SELECT COUNT(*) as total FROM (${countQuery})`
@@ -261,17 +259,12 @@ export class RestaurantRepository {
   }
 
   async getAllTags(): Promise<Tag[]> {
-    const result = await this.db
-      .prepare('SELECT * FROM tags ORDER BY category, name')
-      .all<Tag>()
+    const result = await this.db.prepare('SELECT * FROM tags ORDER BY category, name').all<Tag>()
     return result.results
   }
 
   async existsById(id: number): Promise<boolean> {
-    const result = await this.db
-      .prepare('SELECT 1 FROM restaurants WHERE id = ?')
-      .bind(id)
-      .first()
+    const result = await this.db.prepare('SELECT 1 FROM restaurants WHERE id = ?').bind(id).first()
     return !!result
   }
 }

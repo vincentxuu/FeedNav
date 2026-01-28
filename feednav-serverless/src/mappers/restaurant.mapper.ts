@@ -80,9 +80,7 @@ export function mapToRestaurant(
 /**
  * 將收藏行轉換為 Restaurant 物件（帶 favorited_at）
  */
-export function mapFavoriteToRestaurant(
-  row: FavoriteRow
-): Restaurant & { favorited_at: string } {
+export function mapFavoriteToRestaurant(row: FavoriteRow): Restaurant & { favorited_at: string } {
   return {
     id: row.id,
     name: row.name,
@@ -110,9 +108,7 @@ export function mapFavoriteToRestaurant(
 /**
  * 將造訪行轉換為 Restaurant 物件（帶 visited_at）
  */
-export function mapVisitToRestaurant(
-  row: VisitRow
-): Restaurant & { visited_at: string } {
+export function mapVisitToRestaurant(row: VisitRow): Restaurant & { visited_at: string } {
   return {
     id: row.id,
     name: row.name,
@@ -162,8 +158,6 @@ export function mapFavoritesToRestaurants(
 /**
  * 批量轉換造訪列表
  */
-export function mapVisitsToRestaurants(
-  rows: VisitRow[]
-): (Restaurant & { visited_at: string })[] {
+export function mapVisitsToRestaurants(rows: VisitRow[]): (Restaurant & { visited_at: string })[] {
   return rows.map(mapVisitToRestaurant)
 }

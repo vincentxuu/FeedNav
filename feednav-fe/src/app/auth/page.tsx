@@ -1,29 +1,36 @@
-"use client";
+'use client'
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useAuthSession } from '@/hooks/useAuthSession';
-import { apiClient } from '@/lib/api-client';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useToast } from '@/components/ui/use-toast';
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { useAuthSession } from '@/hooks/useAuthSession'
+import { apiClient } from '@/lib/api-client'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { useToast } from '@/components/ui/use-toast'
 
 const formSchema = z.object({
   email: z.string().email({ message: '請輸入有效的電子郵件地址' }),
   password: z.string().min(6, { message: '密碼長度至少需要 6 個字元' }),
-});
+})
 
 export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-  const { login, register } = useAuthSession();
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const { toast } = useToast()
+  const { login, register } = useAuthSession()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -31,40 +38,40 @@ export default function AuthPage() {
       email: '',
       password: '',
     },
-  });
+  })
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
       if (isSignUp) {
-        const result = await register(values.email, values.password);
+        const result = await register(values.email, values.password)
         if (result.success) {
           toast({
             title: '註冊成功',
             description: '帳號已建立，您已自動登入。',
-          });
-          router.push('/');
+          })
+          router.push('/')
         } else {
           toast({
             title: '註冊失敗',
             description: result.error || '註冊時發生錯誤',
             variant: 'destructive',
-          });
+          })
         }
       } else {
-        const result = await login(values.email, values.password);
+        const result = await login(values.email, values.password)
         if (result.success) {
           toast({
             title: '登入成功',
-          });
-          router.push('/');
+          })
+          router.push('/')
         } else {
           toast({
             title: '登入失敗',
             description: result.error || '登入時發生錯誤',
             variant: 'destructive',
-          });
+          })
         }
       }
     } catch {
@@ -72,17 +79,19 @@ export default function AuthPage() {
         title: isSignUp ? '註冊失敗' : '登入失敗',
         description: '發生未預期的錯誤，請稍後再試。',
         variant: 'destructive',
-      });
+      })
     }
 
-    setIsLoading(false);
-  };
+    setIsLoading(false)
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">{isSignUp ? '建立新帳號' : '登入您的帳號'}</CardTitle>
+          <CardTitle className="text-center text-2xl">
+            {isSignUp ? '建立新帳號' : '登入您的帳號'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -157,5 +166,5 @@ export default function AuthPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

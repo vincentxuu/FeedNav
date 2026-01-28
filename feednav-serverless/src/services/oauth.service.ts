@@ -58,11 +58,7 @@ export class OAuthService {
       { expirationTtl: 600 }
     )
 
-    const authUrl = getGoogleAuthUrl(
-      this.env.GOOGLE_CLIENT_ID,
-      redirectUri,
-      state
-    )
+    const authUrl = getGoogleAuthUrl(this.env.GOOGLE_CLIENT_ID, redirectUri, state)
 
     return { authUrl, state }
   }
@@ -129,11 +125,7 @@ export class OAuthService {
       { expirationTtl: 600 }
     )
 
-    const authUrl = getDiscordAuthUrl(
-      this.env.DISCORD_CLIENT_ID,
-      redirectUri,
-      state
-    )
+    const authUrl = getDiscordAuthUrl(this.env.DISCORD_CLIENT_ID, redirectUri, state)
 
     return { authUrl, state }
   }
@@ -191,10 +183,7 @@ export class OAuthService {
     return this.socialAccountRepo.getByUserId(userId)
   }
 
-  async removeAccount(
-    userId: string,
-    provider: 'google' | 'discord'
-  ): Promise<void> {
+  async removeAccount(userId: string, provider: 'google' | 'discord'): Promise<void> {
     const accountCount = await this.socialAccountRepo.count(userId)
     const user = await this.userRepo.getById(userId)
     const hasPassword = user?.password_hash && user.password_hash.trim() !== ''
@@ -230,9 +219,7 @@ export class OAuthService {
     await this.env.KV.delete(`oauth_state:${state}`)
   }
 
-  private async handleOAuthUser(
-    oauthUser: OAuthUser
-  ): Promise<{ user: User; isNewUser: boolean }> {
+  private async handleOAuthUser(oauthUser: OAuthUser): Promise<{ user: User; isNewUser: boolean }> {
     const existingSocial = await this.socialAccountRepo.getByProviderAndId(
       oauthUser.provider,
       oauthUser.provider_id
@@ -247,11 +234,7 @@ export class OAuthService {
 
       const user = await this.userRepo.getById(existingSocial.user_id)
       if (!user) {
-        throw new OAuthError(
-          'USER_NOT_FOUND',
-          'Associated user not found',
-          500
-        )
+        throw new OAuthError('USER_NOT_FOUND', 'Associated user not found', 500)
       }
 
       return { user, isNewUser: false }
@@ -262,12 +245,7 @@ export class OAuthService {
 
     if (!user) {
       const userId = nanoid()
-      await this.userRepo.createFromOAuth(
-        userId,
-        oauthUser.email,
-        oauthUser.name,
-        oauthUser.avatar
-      )
+      await this.userRepo.createFromOAuth(userId, oauthUser.email, oauthUser.name, oauthUser.avatar)
 
       user = await this.userRepo.getById(userId)
       if (!user) {
@@ -276,11 +254,7 @@ export class OAuthService {
 
       isNewUser = true
     } else {
-      await this.userRepo.updateFromOAuth(
-        user.id,
-        oauthUser.name,
-        oauthUser.avatar
-      )
+      await this.userRepo.updateFromOAuth(user.id, oauthUser.name, oauthUser.avatar)
     }
 
     await this.socialAccountRepo.create({
@@ -295,9 +269,7 @@ export class OAuthService {
     return { user, isNewUser }
   }
 
-  private async generateAuthTokens(
-    user: User
-  ): Promise<{ token: string; refreshToken: string }> {
+  private async generateAuthTokens(user: User): Promise<{ token: string; refreshToken: string }> {
     const token = await generateToken(
       { sub: user.id, email: user.email },
       this.env.JWT_SECRET,

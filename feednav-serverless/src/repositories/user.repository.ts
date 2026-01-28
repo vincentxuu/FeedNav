@@ -25,9 +25,7 @@ export class UserRepository {
     return result
   }
 
-  async getByIdWithoutPassword(
-    id: string
-  ): Promise<Omit<User, 'password_hash'> | null> {
+  async getByIdWithoutPassword(id: string): Promise<Omit<User, 'password_hash'> | null> {
     const result = await this.db
       .prepare(
         'SELECT id, email, name, avatar, is_email_verified, created_at, updated_at FROM users WHERE id = ?'
@@ -101,11 +99,7 @@ export class UserRepository {
       .run()
   }
 
-  async updateFromOAuth(
-    id: string,
-    name: string,
-    avatar?: string | null
-  ): Promise<void> {
+  async updateFromOAuth(id: string, name: string, avatar?: string | null): Promise<void> {
     await this.db
       .prepare(
         `UPDATE users
@@ -120,10 +114,7 @@ export class UserRepository {
   }
 
   async exists(email: string): Promise<boolean> {
-    const result = await this.db
-      .prepare('SELECT 1 FROM users WHERE email = ?')
-      .bind(email)
-      .first()
+    const result = await this.db.prepare('SELECT 1 FROM users WHERE email = ?').bind(email).first()
     return !!result
   }
 }

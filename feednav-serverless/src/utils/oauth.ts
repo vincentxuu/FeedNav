@@ -1,25 +1,25 @@
-import type { 
-  GoogleTokenResponse, 
-  GoogleUserInfo, 
-  DiscordTokenResponse, 
-  DiscordUser 
+import type {
+  GoogleTokenResponse,
+  GoogleUserInfo,
+  DiscordTokenResponse,
+  DiscordUser,
 } from '../types'
 
 // Google OAuth 函數
 export async function exchangeGoogleCode(
-  code: string, 
-  clientId: string, 
+  code: string,
+  clientId: string,
   clientSecret: string,
   redirectUri: string
 ): Promise<GoogleTokenResponse> {
   const tokenUrl = 'https://oauth2.googleapis.com/token'
-  
+
   const params = new URLSearchParams({
     code,
     client_id: clientId,
     client_secret: clientSecret,
     redirect_uri: redirectUri,
-    grant_type: 'authorization_code'
+    grant_type: 'authorization_code',
   })
 
   const response = await fetch(tokenUrl, {
@@ -27,7 +27,7 @@ export async function exchangeGoogleCode(
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: params.toString()
+    body: params.toString(),
   })
 
   if (!response.ok) {
@@ -41,9 +41,9 @@ export async function exchangeGoogleCode(
 
 export async function getGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo> {
   const userInfoUrl = `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`
-  
+
   const response = await fetch(userInfoUrl)
-  
+
   if (!response.ok) {
     const errorData = await response.text()
     console.error('Google user info error:', errorData)
@@ -55,14 +55,14 @@ export async function getGoogleUserInfo(accessToken: string): Promise<GoogleUser
 
 export function getGoogleAuthUrl(clientId: string, redirectUri: string, state?: string): string {
   const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
-  
+
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
     access_type: 'offline',
-    prompt: 'consent'
+    prompt: 'consent',
   })
 
   if (state) {
@@ -80,13 +80,13 @@ export async function exchangeDiscordCode(
   redirectUri: string
 ): Promise<DiscordTokenResponse> {
   const tokenUrl = 'https://discord.com/api/oauth2/token'
-  
+
   const params = new URLSearchParams({
     code,
     client_id: clientId,
     client_secret: clientSecret,
     redirect_uri: redirectUri,
-    grant_type: 'authorization_code'
+    grant_type: 'authorization_code',
   })
 
   const response = await fetch(tokenUrl, {
@@ -94,7 +94,7 @@ export async function exchangeDiscordCode(
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: params.toString()
+    body: params.toString(),
   })
 
   if (!response.ok) {
@@ -108,13 +108,13 @@ export async function exchangeDiscordCode(
 
 export async function getDiscordUserInfo(accessToken: string): Promise<DiscordUser> {
   const userInfoUrl = 'https://discord.com/api/users/@me'
-  
+
   const response = await fetch(userInfoUrl, {
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   })
-  
+
   if (!response.ok) {
     const errorData = await response.text()
     console.error('Discord user info error:', errorData)
@@ -126,12 +126,12 @@ export async function getDiscordUserInfo(accessToken: string): Promise<DiscordUs
 
 export function getDiscordAuthUrl(clientId: string, redirectUri: string, state?: string): string {
   const authUrl = 'https://discord.com/api/oauth2/authorize'
-  
+
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: 'identify email'
+    scope: 'identify email',
   })
 
   if (state) {
@@ -148,8 +148,7 @@ export function getDiscordAvatarUrl(userId: string, avatarHash?: string): string
 
 // 通用 OAuth 工具函數
 export function generateOAuthState(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15)
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 }
 
 export function validateEmail(email: string): boolean {

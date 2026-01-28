@@ -60,11 +60,9 @@ export class AuthService {
     )
     const refreshToken = generateRefreshToken()
 
-    await this.env.KV.put(
-      `refresh_token:${refreshToken}`,
-      JSON.stringify({ userId, email }),
-      { expirationTtl: JWT_CONFIG.REFRESH_TOKEN_EXPIRY }
-    )
+    await this.env.KV.put(`refresh_token:${refreshToken}`, JSON.stringify({ userId, email }), {
+      expirationTtl: JWT_CONFIG.REFRESH_TOKEN_EXPIRY,
+    })
 
     return {
       token,
@@ -125,11 +123,9 @@ export class AuthService {
     const newRefreshToken = generateRefreshToken()
 
     await this.env.KV.delete(`refresh_token:${refreshToken}`)
-    await this.env.KV.put(
-      `refresh_token:${newRefreshToken}`,
-      JSON.stringify({ userId, email }),
-      { expirationTtl: JWT_CONFIG.REFRESH_TOKEN_EXPIRY }
-    )
+    await this.env.KV.put(`refresh_token:${newRefreshToken}`, JSON.stringify({ userId, email }), {
+      expirationTtl: JWT_CONFIG.REFRESH_TOKEN_EXPIRY,
+    })
 
     return {
       token,

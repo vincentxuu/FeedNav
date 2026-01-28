@@ -1,17 +1,16 @@
+'use client'
 
-"use client";
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
 
 export interface Coordinates {
-  latitude: number;
-  longitude: number;
+  latitude: number
+  longitude: number
 }
 
 interface GeolocationState {
-  loading: boolean;
-  error: GeolocationPositionError | { message: string } | null;
-  coordinates: Coordinates | null;
+  loading: boolean
+  error: GeolocationPositionError | { message: string } | null
+  coordinates: Coordinates | null
 }
 
 export const useGeolocation = () => {
@@ -19,24 +18,28 @@ export const useGeolocation = () => {
     loading: true,
     error: null,
     coordinates: null,
-  });
-  const [mounted, setMounted] = useState(false);
+  })
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted) return
 
     // Check if we're in a browser environment and geolocation is supported
-    if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.geolocation) {
+    if (
+      typeof window === 'undefined' ||
+      typeof navigator === 'undefined' ||
+      !navigator.geolocation
+    ) {
       setState({
         loading: false,
-        error: { message: "Geolocation is not supported by this browser." },
+        error: { message: 'Geolocation is not supported by this browser.' },
         coordinates: null,
-      });
-      return;
+      })
+      return
     }
 
     const onSuccess = (position: GeolocationPosition) => {
@@ -47,23 +50,23 @@ export const useGeolocation = () => {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         },
-      });
-    };
+      })
+    }
 
     const onError = (error: GeolocationPositionError) => {
       setState({
         loading: false,
         error,
         coordinates: null,
-      });
-    };
+      })
+    }
 
     navigator.geolocation.getCurrentPosition(onSuccess, onError, {
       enableHighAccuracy: true,
       timeout: 10000,
       maximumAge: 0,
-    });
-  }, [mounted]);
+    })
+  }, [mounted])
 
-  return state;
-};
+  return state
+}

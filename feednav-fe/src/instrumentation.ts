@@ -11,14 +11,14 @@ export async function register() {
       clear: () => {},
       key: () => null,
       length: 0,
-    };
+    }
 
     // Only polyfill if localStorage exists but is incompatible
     if (
       typeof globalThis.localStorage !== 'undefined' &&
       typeof globalThis.localStorage.getItem !== 'function'
     ) {
-      (globalThis as unknown as { localStorage: typeof noopStorage }).localStorage = noopStorage;
+      ;(globalThis as unknown as { localStorage: typeof noopStorage }).localStorage = noopStorage
     }
   }
 }
