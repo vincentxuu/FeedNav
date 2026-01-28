@@ -1,0 +1,27 @@
+name = "feednav-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[env.production]
+vars = { 
+  ENVIRONMENT = "production", 
+  BCRYPT_ROUNDS = "10",
+  FRONTEND_URL = "https://your-domain.com"
+}
+
+[[d1_databases]]
+binding = "DB"
+database_name = "feednav-db"
+# database_id = "your-database-id" # Will be filled after creating database
+
+[[kv_namespaces]]
+binding = "KV"
+# id = "your-kv-namespace-id" # Will be filled after creating KV namespace
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "feednav-assets"
+
+[env.production.routes]
+# pattern = "api.feednav.com/*"
+# zone_name = "feednav.com"
