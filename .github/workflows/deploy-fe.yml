@@ -14,6 +14,9 @@ on:
       - 'feednav-fe/pnpm-lock.yaml'
       - 'feednav-fe/next.config.ts'
       - 'feednav-fe/tailwind.config.ts'
+      - 'feednav-fe/wrangler.jsonc'
+      - 'feednav-fe/.prettierignore'
+      - 'feednav-fe/.prettierrc.json'
       - '.github/workflows/deploy-fe.yml'
   pull_request:
     branches:
