@@ -6,7 +6,7 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
   },
 
   // ============================================
@@ -14,7 +14,7 @@
   // ============================================
   "routes": [
     { "pattern": "feednav.cc/*", "zone_name": "feednav.cc" },
-    { "pattern": "www.feednav.cc/*", "zone_name": "feednav.cc" }
+    { "pattern": "www.feednav.cc/*", "zone_name": "feednav.cc" },
   ],
 
   // ============================================
@@ -23,9 +23,7 @@
   "env": {
     "preview": {
       "name": "feednav-fe-preview",
-      "routes": [
-        { "pattern": "preview.feednav.cc/*", "zone_name": "feednav.cc" }
-      ]
-    }
-  }
+      "routes": [{ "pattern": "preview.feednav.cc/*", "zone_name": "feednav.cc" }],
+    },
+  },
 }
