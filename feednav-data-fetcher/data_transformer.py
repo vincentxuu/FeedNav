@@ -120,6 +120,7 @@ class DataTransformer:
         restaurant: dict[str, Any] = {
             'name': fetcher_data.get('name'),
             'district': fetcher_data.get('district'),
+            'category': fetcher_data.get('category', '餐廳'),
             'cuisine_type': fetcher_data.get('cuisine_type'),
             'rating': fetcher_data.get('rating'),
             'price_level': fetcher_data.get('price_level'),
@@ -135,9 +136,9 @@ class DataTransformer:
             'description': self._generate_description(fetcher_data)
         }
 
-        restaurant['processed_tags'] = self._process_tags(
-            fetcher_data.get('tags', {})
-        )
+        tags_data = fetcher_data.get('tags', {})
+        restaurant['processed_tags'] = self._process_tags(tags_data)
+        restaurant['scenario_tags'] = self._extract_scenario_tags(tags_data)
         restaurant['mrt_info'] = fetcher_data.get('nearby_mrt', [])
 
         return restaurant
@@ -246,6 +247,48 @@ class DataTransformer:
             顯示名稱
         """
         return self.tag_mapping.get(category, {}).get(tag_type, '')
+
+    def _extract_scenario_tags(
+        self, tags_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """
+        提取情境標籤
+
+        從標籤資料中提取情境相關標籤 (scenario, occasion 類別)。
+
+        Args:
+            tags_data: 原始標籤資料
+
+        Returns:
+            情境標籤列表
+        """
+        scenario_tags: list[dict[str, Any]] = []
+        threshold = TRANSFORMER_CONFIG['TAG_CONFIDENCE_THRESHOLD']
+
+        # 情境相關的類別
+        scenario_categories = {'scenario', 'occasion'}
+
+        for category, tags in tags_data.items():
+            if category not in scenario_categories:
+                continue
+
+            if not isinstance(tags, dict):
+                continue
+
+            for tag_type, tag_info in tags.items():
+                if not isinstance(tag_info, dict):
+                    continue
+
+                if tag_info.get('confidence', 0) >= threshold:
+                    tag_name = self._get_tag_name(category, tag_type)
+                    if tag_name:
+                        scenario_tags.append({
+                            'name': tag_name,
+                            'type': tag_type,
+                            'confidence': tag_info['confidence']
+                        })
+
+        return scenario_tags
 
     def _is_positive_tag(self, tag_type: str) -> bool:
         """
