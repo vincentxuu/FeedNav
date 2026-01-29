@@ -122,7 +122,7 @@ const RestaurantCard = ({
             </div>
           ) : (
             <Image
-              src={restaurant.image_url || '/placeholder-restaurant.jpg'}
+              src={restaurant.photos?.[0] || '/placeholder.svg'}
               alt={restaurant.name}
               width={400}
               height={160}
@@ -167,7 +167,7 @@ const RestaurantCard = ({
             </div>
           </div>
           <p className="mt-1 truncate text-xs text-muted-foreground">
-            {restaurant.district} · {restaurant.cuisine} · {priceDisplay}
+            {restaurant.district} · {restaurant.cuisine_type} · {priceDisplay}
             {restaurant.distance !== undefined && ` · 距離 ${restaurant.distance.toFixed(1)} 公里`}
           </p>
           <div className="flex-grow" />

@@ -96,7 +96,7 @@ const RandomSelectorModal = ({ isOpen, onOpenChange, restaurants }: RandomSelect
             <div className="animate-scale-in">
               <h3 className="text-3xl font-bold text-primary">{selectedRestaurant.name}</h3>
               <p className="mt-2 text-muted-foreground">
-                {selectedRestaurant.cuisine} • {selectedRestaurant.district}
+                {selectedRestaurant.cuisine_type} • {selectedRestaurant.district}
               </p>
             </div>
           ) : (

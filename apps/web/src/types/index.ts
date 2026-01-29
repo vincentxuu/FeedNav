@@ -30,10 +30,10 @@ export interface Restaurant {
   id: string
   name: string
   district: string
-  cuisine: string
+  cuisine_type: string
   rating: number
   price_level: number
-  image_url: string
+  photos: string[]
   tags: RestaurantTag[]
   // 用於追蹤收藏狀態
   is_favorited?: boolean

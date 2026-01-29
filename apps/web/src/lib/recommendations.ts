@@ -14,7 +14,7 @@ export function getSimilarRestaurants(
 
   // 1. By cuisine
   const byCuisine = restaurants.filter(
-    (r) => r.cuisine === restaurant.cuisine && !addedIds.has(r.id)
+    (r) => r.cuisine_type === restaurant.cuisine_type && !addedIds.has(r.id)
   )
   byCuisine.forEach((r) => {
     recommendations.push(r)

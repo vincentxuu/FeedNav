@@ -82,7 +82,7 @@ export default function RestaurantDetailPage({ params }: RestaurantDetailPagePro
               </div>
             ) : (
               <Image
-                src={restaurant.image_url || '/placeholder-restaurant.jpg'}
+                src={restaurant.photos?.[0] || '/placeholder.svg'}
                 alt={restaurant.name}
                 width={800}
                 height={320}

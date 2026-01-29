@@ -6,6 +6,74 @@ interface RestaurantInfoProps {
   restaurant: Restaurant
 }
 
+interface OpeningHoursPeriod {
+  open: { day: number; time: string }
+  close?: { day: number; time: string }
+}
+
+interface OpeningHoursData {
+  open_now?: boolean
+  periods?: OpeningHoursPeriod[]
+  weekday_text?: string[]
+}
+
+const DAY_NAMES = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']
+
+function formatTime(time: string): string {
+  const hours = time.slice(0, 2)
+  const minutes = time.slice(2, 4)
+  return `${hours}:${minutes}`
+}
+
+function formatOpeningHours(openingHoursStr: string | undefined): string | null {
+  if (!openingHoursStr) return null
+
+  try {
+    const data: OpeningHoursData = JSON.parse(openingHoursStr)
+
+    // If weekday_text is available, use it directly
+    if (data.weekday_text && data.weekday_text.length > 0) {
+      return data.weekday_text.join('\n')
+    }
+
+    // Otherwise, format from periods
+    if (!data.periods || data.periods.length === 0) return null
+
+    // Group periods by day
+    const dayPeriods: Map<number, string[]> = new Map()
+
+    for (const period of data.periods) {
+      const day = period.open.day
+      const openTime = formatTime(period.open.time)
+      const closeTime = period.close ? formatTime(period.close.time) : '24:00'
+
+      if (!dayPeriods.has(day)) {
+        dayPeriods.set(day, [])
+      }
+      dayPeriods.get(day)!.push(`${openTime} - ${closeTime}`)
+    }
+
+    // Format output
+    const lines: string[] = []
+    for (let day = 0; day < 7; day++) {
+      const periods = dayPeriods.get(day)
+      if (periods && periods.length > 0) {
+        lines.push(`${DAY_NAMES[day]}: ${periods.join(', ')}`)
+      } else {
+        lines.push(`${DAY_NAMES[day]}: 休息`)
+      }
+    }
+
+    return lines.join('\n')
+  } catch {
+    // If parsing fails, return original string if it doesn't look like JSON
+    if (!openingHoursStr.startsWith('{')) {
+      return openingHoursStr
+    }
+    return null
+  }
+}
+
 const RestaurantInfo: React.FC<RestaurantInfoProps> = ({ restaurant }) => {
   const hasCoordinates = restaurant.latitude != null && restaurant.longitude != null
   const mapHref = hasCoordinates
@@ -26,8 +94,8 @@ const RestaurantInfo: React.FC<RestaurantInfoProps> = ({ restaurant }) => {
       value: restaurant.website,
       href: restaurant.website,
     },
-    { id: 'hours', icon: Clock, label: '營業時間', value: restaurant.opening_hours },
-    { id: 'cuisine', icon: Utensils, label: '菜系', value: restaurant.cuisine },
+    { id: 'hours', icon: Clock, label: '營業時間', value: formatOpeningHours(restaurant.opening_hours), isParagraph: true },
+    { id: 'cuisine', icon: Utensils, label: '菜系', value: restaurant.cuisine_type },
     {
       id: 'description',
       icon: Info,
