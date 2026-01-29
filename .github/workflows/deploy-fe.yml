@@ -6,27 +6,20 @@ on:
       - main
       - develop
     paths:
-      - 'feednav-fe/src/**'
-      - 'feednav-fe/app/**'
-      - 'feednav-fe/components/**'
-      - 'feednav-fe/public/**'
-      - 'feednav-fe/package.json'
-      - 'feednav-fe/pnpm-lock.yaml'
-      - 'feednav-fe/next.config.ts'
-      - 'feednav-fe/tailwind.config.ts'
-      - 'feednav-fe/wrangler.jsonc'
-      - 'feednav-fe/.prettierignore'
-      - 'feednav-fe/.prettierrc.json'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/deploy-fe.yml'
   pull_request:
     branches:
       - main
     paths:
-      - 'feednav-fe/**'
+      - 'apps/web/**'
+      - 'packages/**'
 
 env:
   NODE_VERSION: '20'
-  WORKING_DIR: feednav-fe
 
 jobs:
   # ============================================
@@ -35,9 +28,6 @@ jobs:
   lint-and-build:
     name: Lint & Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIR }}
 
     steps:
       - name: Checkout
@@ -45,30 +35,24 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: ${{ env.WORKING_DIR }}/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Type check
-        run: pnpm run type-check
+        run: pnpm --filter @feednav/web type-check
 
       - name: Lint
-        run: pnpm run lint
-
-      - name: Format check
-        run: pnpm run format:check
+        run: pnpm --filter @feednav/web lint
 
       - name: Build
-        run: pnpm run build
+        run: pnpm --filter @feednav/web build
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
@@ -84,9 +68,6 @@ jobs:
     environment:
       name: fe-preview
       url: https://preview.feednav.cc
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIR }}
 
     steps:
       - name: Checkout
@@ -94,21 +75,18 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: ${{ env.WORKING_DIR }}/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build for Preview
-        run: pnpm exec opennextjs-cloudflare build
+        run: pnpm --filter @feednav/web exec opennextjs-cloudflare build
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL_PREVIEW }}
           NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
@@ -118,7 +96,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: ${{ env.WORKING_DIR }}
+          workingDirectory: apps/web
           command: deploy --env preview
 
   # ============================================
@@ -132,9 +110,6 @@ jobs:
     environment:
       name: fe-production
       url: https://feednav.cc
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIR }}
 
     steps:
       - name: Checkout
@@ -142,21 +117,18 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: ${{ env.WORKING_DIR }}/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build & Deploy to Production
-        run: pnpm run deploy
+        run: pnpm --filter @feednav/web deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

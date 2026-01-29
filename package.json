@@ -1,0 +1,30 @@
+{
+  "name": "feednav",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@feednav/web",
+    "dev:mobile": "turbo run dev --filter=@feednav/mobile",
+    "dev:api": "turbo run dev --filter=feednav-serverless",
+    "build": "turbo run build",
+    "build:web": "turbo run build --filter=@feednav/web",
+    "build:mobile": "turbo run build --filter=@feednav/mobile",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^19",
+      "@types/react-dom": "^19"
+    }
+  }
+}
