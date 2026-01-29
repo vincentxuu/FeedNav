@@ -90,6 +90,8 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL_PREVIEW }}
           NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          WRANGLER_BUILD_CONDITIONS: ""
+          WRANGLER_BUILD_PLATFORM: node
 
       - name: Deploy to Preview
         uses: cloudflare/wrangler-action@v3
@@ -134,3 +136,5 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
           NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          WRANGLER_BUILD_CONDITIONS: ""
+          WRANGLER_BUILD_PLATFORM: node
