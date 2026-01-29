@@ -1,19 +1,65 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { FlatList, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
-import { YStack, XStack, Text, Input } from 'tamagui'
-import { Search, Filter } from '@tamagui/lucide-icons'
+import { YStack, XStack, Text } from 'tamagui'
+import { Search, Filter, X } from '@tamagui/lucide-icons'
 
-import { RestaurantCard, Button } from '@feednav/ui'
+import { RestaurantCard, Button, Badge, Input } from '@feednav/ui'
 import { useRestaurants } from '@/lib/queries'
+import { FilterSheet, type FilterState } from '@/components/FilterSheet'
 
 export default function HomeScreen() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
-  const { data, isLoading, refetch, isRefetching } = useRestaurants({ searchTerm })
+  const [filters, setFilters] = useState<FilterState>({})
+  const [showFilters, setShowFilters] = useState(false)
 
+  const queryFilters = useMemo(
+    () => ({
+      searchTerm,
+      district: filters.district,
+      cuisine: filters.cuisine,
+      priceRange: filters.priceRange,
+      tags: filters.tags,
+    }),
+    [searchTerm, filters]
+  )
+
+  const { data, isLoading, refetch, isRefetching } = useRestaurants(queryFilters)
   const restaurants = data?.data?.restaurants ?? []
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (filters.district) count++
+    if (filters.cuisine) count++
+    if (filters.priceRange) count++
+    if (filters.tags && filters.tags.length > 0) count += filters.tags.length
+    return count
+  }, [filters])
+
+  const handleApplyFilters = useCallback((newFilters: FilterState) => {
+    setFilters(newFilters)
+  }, [])
+
+  const clearFilter = useCallback((key: keyof FilterState, value?: string) => {
+    setFilters((prev) => {
+      if (key === 'tags' && value) {
+        return {
+          ...prev,
+          tags: prev.tags?.filter((t) => t !== value),
+        }
+      }
+      return {
+        ...prev,
+        [key]: undefined,
+      }
+    })
+  }, [])
+
+  const clearAllFilters = useCallback(() => {
+    setFilters({})
+  }, [])
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
@@ -42,11 +88,81 @@ export default function HomeScreen() {
                 backgroundColor="transparent"
                 placeholderTextColor="$textMuted"
               />
+              {searchTerm && (
+                <Button variant="ghost" size="sm" onPress={() => setSearchTerm('')}>
+                  <X size={16} color="$textMuted" />
+                </Button>
+              )}
             </XStack>
-            <Button variant="outline" size="md">
+            <Button
+              variant={activeFilterCount > 0 ? 'primary' : 'outline'}
+              size="md"
+              onPress={() => setShowFilters(true)}
+            >
               <Filter size={20} />
+              {activeFilterCount > 0 && (
+                <Text color="white" fontSize={12} fontWeight="600">
+                  {activeFilterCount}
+                </Text>
+              )}
             </Button>
           </XStack>
+
+          {/* Active Filters */}
+          {activeFilterCount > 0 && (
+            <XStack gap="$2" flexWrap="wrap">
+              {filters.district && (
+                <Badge
+                  variant="primary"
+                  size="md"
+                  pressStyle={{ opacity: 0.7 }}
+                  onPress={() => clearFilter('district')}
+                >
+                  {filters.district} <X size={12} />
+                </Badge>
+              )}
+              {filters.cuisine && (
+                <Badge
+                  variant="primary"
+                  size="md"
+                  pressStyle={{ opacity: 0.7 }}
+                  onPress={() => clearFilter('cuisine')}
+                >
+                  {filters.cuisine} <X size={12} />
+                </Badge>
+              )}
+              {filters.priceRange && (
+                <Badge
+                  variant="primary"
+                  size="md"
+                  pressStyle={{ opacity: 0.7 }}
+                  onPress={() => clearFilter('priceRange')}
+                >
+                  {'$'.repeat(filters.priceRange[0])}-{'$'.repeat(filters.priceRange[1])}{' '}
+                  <X size={12} />
+                </Badge>
+              )}
+              {filters.tags?.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="primary"
+                  size="md"
+                  pressStyle={{ opacity: 0.7 }}
+                  onPress={() => clearFilter('tags', tag)}
+                >
+                  {tag} <X size={12} />
+                </Badge>
+              ))}
+              <Badge
+                variant="outline"
+                size="md"
+                pressStyle={{ opacity: 0.7 }}
+                onPress={clearAllFilters}
+              >
+                清除全部
+              </Badge>
+            </XStack>
+          )}
         </YStack>
 
         {/* Restaurant List */}
@@ -72,6 +188,14 @@ export default function HomeScreen() {
           }
         />
       </YStack>
+
+      {/* Filter Sheet */}
+      <FilterSheet
+        open={showFilters}
+        onOpenChange={setShowFilters}
+        filters={filters}
+        onApply={handleApplyFilters}
+      />
     </SafeAreaView>
   )
 }
