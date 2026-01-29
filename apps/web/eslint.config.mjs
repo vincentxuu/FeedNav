@@ -29,7 +29,6 @@ const eslintConfig = [
           varsIgnorePattern: '^_',
         },
       ],
-      '@typescript-eslint/no-empty-object-type': 'warn',
     },
   },
 ]
