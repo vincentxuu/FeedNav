@@ -591,6 +591,21 @@ class FacilityExtractor(BaseTagExtractor):
                 r'(有網路|提供網路|免費網路)',
                 r'(上網|連網).*(方便|可以)',
             ],
+            'has_outdoor_seating': [
+                r'(戶外|露天|露台|陽台).*(座位|區|用餐)',
+                r'(戶外座|室外座)',
+                r'(可以坐|有位子).*(外面|戶外|露天)',
+            ],
+            'has_projector': [
+                r'(投影機|投影設備|大螢幕)',
+                r'(可以投影|投影播放)',
+                r'(投影|播放).*(看球|比賽|電影)',
+            ],
+            'has_reservation': [
+                r'(可以訂位|接受訂位|線上訂位)',
+                r'(訂位|預約).*(方便|簡單|可以)',
+                r'(電話|網路).*(訂位|預約)',
+            ],
         }
 
     def extract(self, text: str, rating: int) -> list[dict[str, Any]]:

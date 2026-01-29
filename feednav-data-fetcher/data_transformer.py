@@ -104,7 +104,10 @@ class DataTransformer:
                 'has_private_room': '有包廂',
                 'has_counter': '有吧台',
                 'has_power_outlet': '有插座',
-                'has_wifi': '有Wi-Fi'
+                'has_wifi': '有Wi-Fi',
+                'has_outdoor_seating': '有戶外座位',
+                'has_projector': '有投影設備',
+                'has_reservation': '可訂位'
             }
         }
     
@@ -371,7 +374,8 @@ class DataTransformer:
             'vintage_style',
             # 情境與設施標籤
             'diet_friendly', 'work_friendly', 'date_friendly',
-            'has_private_room', 'has_counter', 'has_power_outlet', 'has_wifi'
+            'has_private_room', 'has_counter', 'has_power_outlet', 'has_wifi',
+            'has_outdoor_seating', 'has_projector', 'has_reservation'
         }
         return tag_type in positive_tags
 

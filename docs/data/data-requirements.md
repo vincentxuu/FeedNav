@@ -325,7 +325,7 @@ INSERT INTO tags (name, category, color, is_positive) VALUES
 ✅ 座位類型資訊 (seat_type 欄位)
 ✅ 約會適合標籤 (date_friendly)
 ✅ 平均用餐時間 (avg_visit_duration 提取邏輯已實作)
-⬜ 更多設施標籤
+✅ 更多設施標籤 (戶外座位、投影設備、可訂位)
 ```
 
 ---
@@ -360,8 +360,8 @@ INSERT INTO tags (name, category, color, is_positive) VALUES
 ✅ 修改 review_tag_extractor.py 加入情境標籤
 ✅ 修改 data_transformer.py 處理情境標籤
 ✅ 更新資料庫 schema
-⬜ 重新處理現有餐廳資料
-⬜ 驗證標籤品質
+🔧 重新處理現有餐廳資料 (使用 integrate_data.py)
+🔧 驗證標籤品質 (使用 analyze_data_quality.py)
 ```
 
 ### Week 3-4：品類擴展 ✅ 已完成
@@ -371,14 +371,14 @@ INSERT INTO tags (name, category, color, is_positive) VALUES
 ✅ 收集甜點店資料
 ✅ 收集咖啡廳資料
 ✅ 修改 cuisine_classifier.py 加入主分類
-⬜ 整合新資料到資料庫
+🔧 整合新資料到資料庫 (使用 integrate_data.py)
 ```
 
-### Week 5-6：品質優化 ⬜ 待進行
+### Week 5-6：品質優化 🔧 工具已就緒
 
 ```
-⬜ 分析標籤分布
-⬜ 調整關鍵字與門檻
+🔧 分析標籤分布 (使用 analyze_data_quality.py)
+🔧 調整關鍵字與門檻 (修改 review_tag_extractor.py)
 ⬜ 人工抽查驗證
 ⬜ 補充缺失資料
 ```

@@ -170,6 +170,9 @@ INSERT OR IGNORE INTO tags (name, category, color, is_positive) VALUES
 ('有吧台', 'facility', '#6BCB77', 1),
 ('有插座', 'facility', '#4D96FF', 1),
 ('有Wi-Fi', 'facility', '#FF6B6B', 1),
+('有戶外座位', 'facility', '#81C784', 1),
+('有投影設備', 'facility', '#7986CB', 1),
+('可訂位', 'facility', '#4DB6AC', 1),
 ('無障礙設施', 'accessibility', '#2196F3', 1),
 ('有兒童座椅', 'accessibility', '#9C27B0', 1);
 
