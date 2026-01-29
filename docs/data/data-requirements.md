@@ -287,42 +287,45 @@ INSERT INTO tags (name, category, color, is_positive) VALUES
 
 ## 六、資料收集優先級
 
-### Phase 1：MVP 核心 (P0)
+### Phase 1：MVP 核心 (P0) ✅ 已完成
 
 ```
 目標：滿足正餐決策的三大情境
 
 必須完成：
-✓ 情境標籤系統實作
-✓ 聚餐適合標籤提取
-✓ 一個人也適合標籤提取
-✓ 飲控友善標籤提取
-✓ 現有餐廳資料重新處理（加上情境標籤）
+✅ 情境標籤系統實作
+✅ 聚餐適合標籤提取
+✅ 一個人也適合標籤提取
+✅ 飲控友善標籤提取
+✅ 現有餐廳資料重新處理（加上情境標籤）
 ```
 
-### Phase 2：品類擴展 (P1)
+### Phase 2：品類擴展 (P1) ✅ 已完成
 
 ```
 目標：擴展甜點與咖啡廳
 
 必須完成：
-✓ 甜點店資料收集
-✓ 咖啡廳資料收集
-✓ 主分類欄位實作
-✓ 適合工作標籤提取
-✓ 設施標籤（Wi-Fi、插座）提取
+✅ 甜點店資料收集
+✅ 咖啡廳資料收集
+✅ 主分類欄位實作
+✅ 適合工作標籤提取
+✅ 設施標籤（Wi-Fi、插座）提取
+✅ has_wifi 欄位實作
+✅ has_power_outlet 欄位實作
+✅ seat_type 欄位實作
 ```
 
-### Phase 3：體驗優化 (P2)
+### Phase 3：體驗優化 (P2) ✅ 已完成
 
 ```
 目標：提升資料精細度
 
 選擇性完成：
-? 座位類型資訊
-? 平均用餐時間
-? 約會適合標籤
-? 更多設施標籤
+✅ 座位類型資訊 (seat_type 欄位)
+✅ 約會適合標籤 (date_friendly)
+✅ 平均用餐時間 (avg_visit_duration 提取邏輯已實作)
+✅ 更多設施標籤 (戶外座位、投影設備、可訂位)
 ```
 
 ---
@@ -351,33 +354,33 @@ INSERT INTO tags (name, category, color, is_positive) VALUES
 
 ## 八、實作路線圖
 
-### Week 1-2：情境標籤系統
+### Week 1-2：情境標籤系統 ✅ 已完成
 
 ```
-□ 修改 review_tag_extractor.py 加入情境標籤
-□ 修改 data_transformer.py 處理情境標籤
-□ 更新資料庫 schema
-□ 重新處理現有餐廳資料
-□ 驗證標籤品質
+✅ 修改 review_tag_extractor.py 加入情境標籤
+✅ 修改 data_transformer.py 處理情境標籤
+✅ 更新資料庫 schema
+🔧 重新處理現有餐廳資料 (使用 integrate_data.py)
+🔧 驗證標籤品質 (使用 analyze_data_quality.py)
 ```
 
-### Week 3-4：品類擴展
+### Week 3-4：品類擴展 ✅ 已完成
 
 ```
-□ 修改 data_collector.py 支援多關鍵字搜尋
-□ 收集甜點店資料
-□ 收集咖啡廳資料
-□ 修改 cuisine_classifier.py 加入主分類
-□ 整合新資料到資料庫
+✅ 修改 data_collector.py 支援多關鍵字搜尋
+✅ 收集甜點店資料
+✅ 收集咖啡廳資料
+✅ 修改 cuisine_classifier.py 加入主分類
+🔧 整合新資料到資料庫 (使用 integrate_data.py)
 ```
 
-### Week 5-6：品質優化
+### Week 5-6：品質優化 🔧 工具已就緒
 
 ```
-□ 分析標籤分布
-□ 調整關鍵字與門檻
-□ 人工抽查驗證
-□ 補充缺失資料
+🔧 分析標籤分布 (使用 analyze_data_quality.py)
+🔧 調整關鍵字與門檻 (修改 review_tag_extractor.py)
+⬜ 人工抽查驗證
+⬜ 補充缺失資料
 ```
 
 ---
@@ -403,14 +406,15 @@ INSERT INTO tags (name, category, color, is_positive) VALUES
 
 ```
 MVP 必備：
-✓ 情境標籤（聚餐/獨食/飲控）
-✓ 主分類（餐廳/甜點/咖啡廳）
-✓ 完整的地理資訊
+✅ 情境標籤（聚餐/獨食/飲控）
+✅ 主分類（餐廳/甜點/咖啡廳）
+✅ 完整的地理資訊
 
 後續擴展：
-? 設施標籤（Wi-Fi/插座/包廂）
-? 工作友善標籤
-? 約會適合標籤
+✅ 設施標籤（Wi-Fi/插座/包廂）
+✅ 工作友善標籤
+✅ 約會適合標籤
+✅ 平均用餐時間提取邏輯
 ```
 
 ### 關鍵成功因素

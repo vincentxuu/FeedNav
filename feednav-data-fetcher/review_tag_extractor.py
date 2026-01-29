@@ -591,8 +591,165 @@ class FacilityExtractor(BaseTagExtractor):
                 r'(有網路|提供網路|免費網路)',
                 r'(上網|連網).*(方便|可以)',
             ],
+            'has_outdoor_seating': [
+                r'(戶外|露天|露台|陽台).*(座位|區|用餐)',
+                r'(戶外座|室外座)',
+                r'(可以坐|有位子).*(外面|戶外|露天)',
+            ],
+            'has_projector': [
+                r'(投影機|投影設備|大螢幕)',
+                r'(可以投影|投影播放)',
+                r'(投影|播放).*(看球|比賽|電影)',
+            ],
+            'has_reservation': [
+                r'(可以訂位|接受訂位|線上訂位)',
+                r'(訂位|預約).*(方便|簡單|可以)',
+                r'(電話|網路).*(訂位|預約)',
+            ],
         }
 
     def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
         """提取設施標籤"""
         return self._extract_with_patterns(text, rating, base_confidence=0.7)
+
+
+class VisitDurationExtractor:
+    """用餐時間提取器"""
+
+    # 時間關鍵字模式
+    DURATION_PATTERNS = [
+        # 小時格式
+        (r'(\d+(?:\.\d+)?)\s*(?:小時|個小時|hrs?|hours?)', 'hours'),
+        (r'(\d+)\s*(?:個半小時|個半鐘頭)', 'hours_half'),
+        # 分鐘格式
+        (r'(\d+)\s*(?:分鐘|分|mins?|minutes?)', 'minutes'),
+        # 組合格式 (1小時30分)
+        (r'(\d+)\s*(?:小時|個小時)\s*(\d+)\s*(?:分鐘?|分)', 'hours_minutes'),
+        # 範圍格式 (1-2小時)
+        (r'(\d+)\s*[-~至到]\s*(\d+)\s*(?:小時|個小時)', 'hours_range'),
+        # 描述性格式
+        (r'(半小時|半個小時)', 'half_hour'),
+        (r'(一小時|一個小時)', 'one_hour'),
+        (r'(兩小時|兩個小時|2小時)', 'two_hours'),
+    ]
+
+    # 上下文關鍵字 (用餐時間相關)
+    CONTEXT_KEYWORDS = [
+        r'用餐.{0,5}(?:時間|約|大概|差不多)',
+        r'(?:吃了|待了|坐了|花了).{0,5}',
+        r'(?:用餐|吃飯).{0,5}(?:大約|約|差不多)',
+        r'(?:限時|用餐時間)',
+    ]
+
+    def extract_duration(self, reviews: list[dict[str, Any] | str]) -> int | None:
+        """
+        從評論中提取平均用餐時間
+
+        Args:
+            reviews: 評論列表
+
+        Returns:
+            平均用餐時間（分鐘），若無法提取則返回 None
+        """
+        if not reviews:
+            return None
+
+        durations: list[int] = []
+
+        for review in reviews:
+            if isinstance(review, dict):
+                text = review.get('text', '')
+            else:
+                text = str(review)
+
+            if not text:
+                continue
+
+            duration = self._extract_from_text(text)
+            if duration:
+                durations.append(duration)
+
+        if not durations:
+            return None
+
+        # 返回中位數以避免極端值影響
+        durations.sort()
+        mid = len(durations) // 2
+        if len(durations) % 2 == 0:
+            return (durations[mid - 1] + durations[mid]) // 2
+        return durations[mid]
+
+    def _extract_from_text(self, text: str) -> int | None:
+        """
+        從單則評論中提取用餐時間
+
+        Args:
+            text: 評論文字
+
+        Returns:
+            用餐時間（分鐘）
+        """
+        # 檢查是否有上下文關鍵字
+        has_context = any(
+            re.search(pattern, text, re.IGNORECASE)
+            for pattern in self.CONTEXT_KEYWORDS
+        )
+
+        for pattern, pattern_type in self.DURATION_PATTERNS:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                minutes = self._parse_duration(match, pattern_type)
+                if minutes and 10 <= minutes <= 300:  # 合理範圍：10分鐘到5小時
+                    # 有上下文時信心度更高
+                    if has_context or minutes >= 30:
+                        return minutes
+
+        return None
+
+    def _parse_duration(self, match: re.Match, pattern_type: str) -> int | None:
+        """
+        解析匹配結果為分鐘數
+
+        Args:
+            match: 正則匹配結果
+            pattern_type: 模式類型
+
+        Returns:
+            分鐘數
+        """
+        try:
+            if pattern_type == 'hours':
+                hours = float(match.group(1))
+                return int(hours * 60)
+
+            elif pattern_type == 'hours_half':
+                hours = int(match.group(1))
+                return hours * 60 + 30
+
+            elif pattern_type == 'minutes':
+                return int(match.group(1))
+
+            elif pattern_type == 'hours_minutes':
+                hours = int(match.group(1))
+                minutes = int(match.group(2))
+                return hours * 60 + minutes
+
+            elif pattern_type == 'hours_range':
+                min_hours = int(match.group(1))
+                max_hours = int(match.group(2))
+                avg_hours = (min_hours + max_hours) / 2
+                return int(avg_hours * 60)
+
+            elif pattern_type == 'half_hour':
+                return 30
+
+            elif pattern_type == 'one_hour':
+                return 60
+
+            elif pattern_type == 'two_hours':
+                return 120
+
+        except (ValueError, IndexError):
+            pass
+
+        return None

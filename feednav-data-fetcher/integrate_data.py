@@ -138,6 +138,11 @@ def _print_summary(
         for cuisine, count in list(stats['cuisine_distribution'].items())[:5]:
             print(f"  {cuisine}: {count} 間")
 
+    # 設施統計
+    print(f"\n=== 設施統計 ===")
+    print(f"有 Wi-Fi：{stats.get('has_wifi_count', 0)} 間")
+    print(f"有插座：{stats.get('has_power_outlet_count', 0)} 間")
+
     print(f"\n=== 資料完整性檢查 ===")
     integrity = inserter.validate_data_integrity()
     if integrity['has_issues']:
