@@ -29,3 +29,20 @@ yarn-error.*
 # Temporary files
 .tmp/
 tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Data fetcher temp files
+feednav-data-fetcher/temp_import.db
+feednav-data-fetcher/import.sql
+feednav-data-fetcher/import_restaurants.sql
+feednav-data-fetcher/bug.md
+
+# Legacy frontend directory (migrated to apps/web)
+feednav-fe/
