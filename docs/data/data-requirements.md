@@ -316,7 +316,7 @@ INSERT INTO tags (name, category, color, is_positive) VALUES
 ✅ seat_type 欄位實作
 ```
 
-### Phase 3：體驗優化 (P2) ⚠️ 部分完成
+### Phase 3：體驗優化 (P2) ✅ 已完成
 
 ```
 目標：提升資料精細度
@@ -324,7 +324,7 @@ INSERT INTO tags (name, category, color, is_positive) VALUES
 選擇性完成：
 ✅ 座位類型資訊 (seat_type 欄位)
 ✅ 約會適合標籤 (date_friendly)
-⬜ 平均用餐時間 (avg_visit_duration 欄位已建立，待提取邏輯)
+✅ 平均用餐時間 (avg_visit_duration 提取邏輯已實作)
 ⬜ 更多設施標籤
 ```
 
@@ -414,7 +414,7 @@ MVP 必備：
 ✅ 設施標籤（Wi-Fi/插座/包廂）
 ✅ 工作友善標籤
 ✅ 約會適合標籤
-⬜ 平均用餐時間提取邏輯
+✅ 平均用餐時間提取邏輯
 ```
 
 ### 關鍵成功因素

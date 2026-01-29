@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from review_tag_extractor import VisitDurationExtractor
+
 # 配置常數
 TRANSFORMER_CONFIG = {
     'MAX_PHOTOS': 5,                         # 最多儲存的照片數量
@@ -23,6 +25,7 @@ class DataTransformer:
     def __init__(self) -> None:
         """初始化資料轉換器"""
         self.tag_mapping = self._load_tag_mapping()
+        self.duration_extractor = VisitDurationExtractor()
 
     def _load_tag_mapping(self) -> dict[str, dict[str, str]]:
         """載入標籤對應表"""
@@ -146,6 +149,10 @@ class DataTransformer:
         restaurant['has_wifi'] = facility_info['has_wifi']
         restaurant['has_power_outlet'] = facility_info['has_power_outlet']
         restaurant['seat_type'] = facility_info['seat_type']
+
+        # 提取平均用餐時間
+        reviews = fetcher_data.get('reviews', [])
+        restaurant['avg_visit_duration'] = self.duration_extractor.extract_duration(reviews)
 
         return restaurant
 

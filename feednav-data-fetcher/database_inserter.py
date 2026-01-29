@@ -87,9 +87,9 @@ class DatabaseInserter:
             name, district, category, cuisine_type, rating, price_level,
             photos, address, phone, website, opening_hours,
             description, latitude, longitude, scenario_tags,
-            has_wifi, has_power_outlet, seat_type,
+            has_wifi, has_power_outlet, seat_type, avg_visit_duration,
             created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         now = datetime.now().isoformat()
@@ -115,6 +115,7 @@ class DatabaseInserter:
             restaurant_data.get('has_wifi'),
             restaurant_data.get('has_power_outlet'),
             seat_type,
+            restaurant_data.get('avg_visit_duration'),
             now,
             now
         ))
@@ -149,7 +150,7 @@ class DatabaseInserter:
             district = ?, category = ?, cuisine_type = ?, rating = ?, price_level = ?,
             photos = ?, phone = ?, website = ?, opening_hours = ?,
             description = ?, latitude = ?, longitude = ?, scenario_tags = ?,
-            has_wifi = ?, has_power_outlet = ?, seat_type = ?,
+            has_wifi = ?, has_power_outlet = ?, seat_type = ?, avg_visit_duration = ?,
             updated_at = ?
         WHERE id = ?
         """
@@ -175,6 +176,7 @@ class DatabaseInserter:
             restaurant_data.get('has_wifi'),
             restaurant_data.get('has_power_outlet'),
             seat_type,
+            restaurant_data.get('avg_visit_duration'),
             now,
             restaurant_id
         ))
