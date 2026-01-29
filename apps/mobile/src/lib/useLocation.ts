@@ -1,12 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import * as Location from 'expo-location'
 import { MAP_CONFIG } from '@feednav/shared'
-
-// Constants
-const LOCATION_CONFIG = {
-  WATCH_TIME_INTERVAL: 10000, // 10 seconds
-  WATCH_DISTANCE_INTERVAL: 50, // 50 meters
-} as const
+import { LOCATION_CONFIG } from './constants'
 
 interface LocationState {
   latitude: number
@@ -40,7 +35,18 @@ function getDefaultLocation(): LocationState {
   }
 }
 
-export function useLocation(): UseLocationResult {
+// Helper function to convert Location result to LocationState
+function toLocationState(result: Location.LocationObject): LocationState {
+  return {
+    latitude: result.coords.latitude,
+    longitude: result.coords.longitude,
+    accuracy: result.coords.accuracy,
+    timestamp: result.timestamp,
+  }
+}
+
+// Shared hook logic for location management
+function useLocationBase() {
   const [location, setLocation] = useState<LocationState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -69,38 +75,40 @@ export function useLocation(): UseLocationResult {
     }
   }, [])
 
-  const getCurrentLocation = useCallback(async () => {
+  const fetchCurrentLocation = useCallback(async (): Promise<LocationState | null> => {
     try {
-      if (isMounted.current) {
-        setIsLoading(true)
-        setError(null)
-      }
-
-      const granted = await checkPermission()
-
-      if (!granted) {
-        if (isMounted.current) {
-          setHasPermission(false)
-          setLocation(getDefaultLocation())
-        }
-        return
-      }
-
-      if (isMounted.current) {
-        setHasPermission(true)
-      }
-
       const result = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       })
+      return toLocationState(result)
+    } catch (err) {
+      throw err instanceof Error ? err : new Error('無法取得目前位置')
+    }
+  }, [])
 
-      if (isMounted.current) {
-        setLocation({
-          latitude: result.coords.latitude,
-          longitude: result.coords.longitude,
-          accuracy: result.coords.accuracy,
-          timestamp: result.timestamp,
-        })
+  const initializeLocation = useCallback(async () => {
+    if (!isMounted.current) return
+
+    setIsLoading(true)
+    setError(null)
+
+    const granted = await checkPermission()
+
+    if (!isMounted.current) return
+
+    if (!granted) {
+      setHasPermission(false)
+      setLocation(getDefaultLocation())
+      setIsLoading(false)
+      return { granted: false }
+    }
+
+    setHasPermission(true)
+
+    try {
+      const locationState = await fetchCurrentLocation()
+      if (isMounted.current && locationState) {
+        setLocation(locationState)
       }
     } catch (err) {
       if (isMounted.current) {
@@ -112,27 +120,49 @@ export function useLocation(): UseLocationResult {
         setIsLoading(false)
       }
     }
-  }, [])
+
+    return { granted: true }
+  }, [fetchCurrentLocation])
+
+  return {
+    location,
+    setLocation,
+    error,
+    setError,
+    isLoading,
+    setIsLoading,
+    hasPermission,
+    setHasPermission,
+    isMounted,
+    requestPermission,
+    fetchCurrentLocation,
+    initializeLocation,
+  }
+}
+
+export function useLocation(): UseLocationResult {
+  const {
+    location,
+    error,
+    isLoading,
+    hasPermission,
+    isMounted,
+    requestPermission,
+    initializeLocation,
+  } = useLocationBase()
 
   const refreshLocation = useCallback(async () => {
-    if (hasPermission) {
-      await getCurrentLocation()
-    } else {
-      const granted = await requestPermission()
-      if (granted) {
-        await getCurrentLocation()
-      }
-    }
-  }, [hasPermission, requestPermission, getCurrentLocation])
+    await initializeLocation()
+  }, [initializeLocation])
 
   useEffect(() => {
     isMounted.current = true
-    getCurrentLocation()
+    initializeLocation()
 
     return () => {
       isMounted.current = false
     }
-  }, [getCurrentLocation])
+  }, [initializeLocation])
 
   return {
     location,
@@ -145,145 +175,43 @@ export function useLocation(): UseLocationResult {
 }
 
 export function useWatchLocation(enabled = true): UseLocationResult & { isWatching: boolean } {
-  const [location, setLocation] = useState<LocationState | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null)
+  const {
+    location,
+    setLocation,
+    error,
+    setError,
+    isLoading,
+    hasPermission,
+    isMounted,
+    requestPermission,
+    initializeLocation,
+  } = useLocationBase()
+
   const [isWatching, setIsWatching] = useState(false)
-  const isMounted = useRef(true)
-
-  const requestPermission = useCallback(async (): Promise<boolean> => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      const granted = status === 'granted'
-
-      if (isMounted.current) {
-        setHasPermission(granted)
-        if (!granted) {
-          setError('需要位置權限才能顯示附近餐廳')
-        }
-      }
-
-      return granted
-    } catch {
-      if (isMounted.current) {
-        setError('無法請求位置權限')
-        setHasPermission(false)
-      }
-      return false
-    }
-  }, [])
 
   const refreshLocation = useCallback(async () => {
-    try {
-      if (isMounted.current) {
-        setIsLoading(true)
-        setError(null)
-      }
+    await initializeLocation()
+  }, [initializeLocation])
 
-      const granted = await checkPermission()
-
-      if (!granted) {
-        if (isMounted.current) {
-          setHasPermission(false)
-          setLocation(getDefaultLocation())
-        }
-        return
-      }
-
-      if (isMounted.current) {
-        setHasPermission(true)
-      }
-
-      const result = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      })
-
-      if (isMounted.current) {
-        setLocation({
-          latitude: result.coords.latitude,
-          longitude: result.coords.longitude,
-          accuracy: result.coords.accuracy,
-          timestamp: result.timestamp,
-        })
-      }
-    } catch (err) {
-      if (isMounted.current) {
-        setLocation(getDefaultLocation())
-        setError(err instanceof Error ? err.message : '無法取得目前位置')
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false)
-      }
-    }
-  }, [])
-
-  // Initial location fetch and watch setup
   useEffect(() => {
     isMounted.current = true
     let subscription: Location.LocationSubscription | null = null
 
-    const initLocation = async () => {
-      if (!isMounted.current) return
+    const init = async () => {
+      const result = await initializeLocation()
 
-      setIsLoading(true)
-
-      const granted = await checkPermission()
-
-      if (!isMounted.current) return
-
-      if (!granted) {
-        setHasPermission(false)
-        setLocation(getDefaultLocation())
-        setIsLoading(false)
-        return
-      }
-
-      setHasPermission(true)
-
-      // Get initial location
-      try {
-        const result = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        })
-
-        if (isMounted.current) {
-          setLocation({
-            latitude: result.coords.latitude,
-            longitude: result.coords.longitude,
-            accuracy: result.coords.accuracy,
-            timestamp: result.timestamp,
-          })
-        }
-      } catch (err) {
-        if (isMounted.current) {
-          setLocation(getDefaultLocation())
-          setError(err instanceof Error ? err.message : '無法取得目前位置')
-        }
-      } finally {
-        if (isMounted.current) {
-          setIsLoading(false)
-        }
-      }
-
-      // Start watching if enabled
-      if (enabled && isMounted.current) {
+      // Start watching if enabled and permission granted
+      if (enabled && result?.granted && isMounted.current) {
         try {
           subscription = await Location.watchPositionAsync(
             {
               accuracy: Location.Accuracy.Balanced,
-              timeInterval: LOCATION_CONFIG.WATCH_TIME_INTERVAL,
-              distanceInterval: LOCATION_CONFIG.WATCH_DISTANCE_INTERVAL,
+              timeInterval: LOCATION_CONFIG.WATCH_INTERVAL_MS,
+              distanceInterval: LOCATION_CONFIG.WATCH_DISTANCE_METERS,
             },
             (newLocation) => {
               if (isMounted.current) {
-                setLocation({
-                  latitude: newLocation.coords.latitude,
-                  longitude: newLocation.coords.longitude,
-                  accuracy: newLocation.coords.accuracy,
-                  timestamp: newLocation.timestamp,
-                })
+                setLocation(toLocationState(newLocation))
                 setIsWatching(true)
               }
             }
@@ -296,7 +224,7 @@ export function useWatchLocation(enabled = true): UseLocationResult & { isWatchi
       }
     }
 
-    initLocation()
+    init()
 
     return () => {
       isMounted.current = false
@@ -305,7 +233,7 @@ export function useWatchLocation(enabled = true): UseLocationResult & { isWatchi
       }
       setIsWatching(false)
     }
-  }, [enabled])
+  }, [enabled, initializeLocation, setLocation, setError])
 
   return {
     location,

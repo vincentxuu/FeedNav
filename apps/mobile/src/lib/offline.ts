@@ -2,13 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import NetInfo from '@react-native-community/netinfo'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import type { Restaurant } from '@feednav/shared'
-
-// Constants
-const CACHE_CONFIG = {
-  EXPIRY_24H: 24 * 60 * 60 * 1000,
-  EXPIRY_7D: 7 * 24 * 60 * 60 * 1000,
-  EXPIRY_30D: 30 * 24 * 60 * 60 * 1000,
-} as const
+import { CACHE_DURATIONS } from './constants'
 
 const CACHE_KEYS = {
   RESTAURANTS: 'cache:restaurants',
@@ -48,7 +42,7 @@ export function useNetworkStatus() {
 async function setCache<T>(
   key: string,
   data: T,
-  expiryMs = CACHE_CONFIG.EXPIRY_24H
+  expiryMs = CACHE_DURATIONS.SHORT
 ): Promise<void> {
   const cacheItem: CacheItem<T> = {
     data,
@@ -104,7 +98,7 @@ export async function addRecentSearch(term: string): Promise<void> {
   const searches = (await getCache<string[]>(CACHE_KEYS.RECENT_SEARCHES)) ?? []
   const filtered = searches.filter((s) => s !== term)
   const updated = [term, ...filtered].slice(0, 10) // Keep last 10
-  await setCache(CACHE_KEYS.RECENT_SEARCHES, updated, CACHE_CONFIG.EXPIRY_7D)
+  await setCache(CACHE_KEYS.RECENT_SEARCHES, updated, CACHE_DURATIONS.MEDIUM)
 }
 
 export async function getRecentSearches(): Promise<string[]> {
@@ -129,7 +123,7 @@ export async function saveUserPreferences(prefs: Partial<UserPreferences>): Prom
     preferredPriceRange: null,
   }
   const updated = { ...current, ...prefs }
-  await setCache(CACHE_KEYS.USER_PREFERENCES, updated, CACHE_CONFIG.EXPIRY_30D)
+  await setCache(CACHE_KEYS.USER_PREFERENCES, updated, CACHE_DURATIONS.LONG)
 }
 
 export async function getUserPreferences(): Promise<UserPreferences | null> {

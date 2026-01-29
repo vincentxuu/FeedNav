@@ -11,11 +11,9 @@ import { useNearbyRestaurants } from '@/lib/queries'
 import { useLocation } from '@/lib/useLocation'
 import { RestaurantCard, Button } from '@feednav/ui'
 import type { Restaurant } from '@feednav/shared'
+import { SEMANTIC_COLORS } from '@/lib/constants'
 
 const { width } = Dimensions.get('window')
-
-// Use theme primary color for markers
-const MARKER_PRIMARY_COLOR = '#f97316'
 
 export default function MapScreen() {
   const router = useRouter()
@@ -139,7 +137,7 @@ export default function MapScreen() {
                 >
                   <MapPin
                     size={20}
-                    color={selectedRestaurant?.id === restaurant.id ? 'white' : MARKER_PRIMARY_COLOR}
+                    color={selectedRestaurant?.id === restaurant.id ? 'white' : SEMANTIC_COLORS.PRIMARY_ORANGE}
                   />
                 </YStack>
               </Marker>

@@ -26,14 +26,9 @@ import {
   useRemoveVisit,
 } from '@/lib/queries'
 import { useAuth } from '@/lib/auth-context'
+import { SEMANTIC_COLORS } from '@/lib/constants'
 
 const { width } = Dimensions.get('window')
-
-// Semantic color constants
-const COLORS = {
-  HEART_RED: '#ef4444',
-  STAR_GOLD: '#fbbf24',
-} as const
 
 export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -212,8 +207,8 @@ export default function RestaurantDetailScreen() {
               ) : (
                 <Heart
                   size={24}
-                  color={isFavorited ? COLORS.HEART_RED : '$color'}
-                  fill={isFavorited ? COLORS.HEART_RED : 'transparent'}
+                  color={isFavorited ? SEMANTIC_COLORS.HEART_RED : '$color'}
+                  fill={isFavorited ? SEMANTIC_COLORS.HEART_RED : 'transparent'}
                 />
               )}
             </Button>
@@ -279,7 +274,7 @@ export default function RestaurantDetailScreen() {
               </XStack>
               <XStack alignItems="center" gap="$3" flexWrap="wrap">
                 <XStack alignItems="center" gap="$1">
-                  <Star size={18} color={COLORS.STAR_GOLD} fill={COLORS.STAR_GOLD} />
+                  <Star size={18} color={SEMANTIC_COLORS.STAR_GOLD} fill={SEMANTIC_COLORS.STAR_GOLD} />
                   <Text fontSize={16} fontWeight="600" color="$color">
                     {restaurant.rating?.toFixed(1) || 'N/A'}
                   </Text>
