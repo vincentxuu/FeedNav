@@ -91,6 +91,17 @@ class DataTransformer:
                 'good_view': '景觀優美',
                 'instagrammable': '網美打卡',
                 'vintage_style': '復古風格'
+            },
+            'scenario': {
+                'diet_friendly': '飲控友善',
+                'work_friendly': '適合工作',
+                'date_friendly': '約會適合'
+            },
+            'facility': {
+                'has_private_room': '有包廂',
+                'has_counter': '有吧台',
+                'has_power_outlet': '有插座',
+                'has_wifi': '有Wi-Fi'
             }
         }
     
@@ -250,11 +261,14 @@ class DataTransformer:
             'electronic_payment', 'multiple_payment', 'quiet', 'romantic',
             'family_friendly', 'clean', 'good_service', 'fast_service',
             'pet_friendly', 'non_smoking', 'good_ventilation',
-            # 新增標籤
+            # 價格、等候、停車、用餐限制
             'cp_value_high', 'large_portion', 'no_wait', 'parking_easy',
             'no_time_limit', 'solo_friendly', 'group_friendly', 'business_friendly',
             'wheelchair_accessible', 'baby_chair', 'good_view', 'instagrammable',
-            'vintage_style'
+            'vintage_style',
+            # 情境與設施標籤
+            'diet_friendly', 'work_friendly', 'date_friendly',
+            'has_private_room', 'has_counter', 'has_power_outlet', 'has_wifi'
         }
         return tag_type in positive_tags
 

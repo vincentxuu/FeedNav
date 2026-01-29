@@ -5,6 +5,8 @@
 - 環境、衛生、服務、寵物政策、付款方式、空氣品質
 - 價格感受、等候與訂位、停車交通、用餐限制
 - 適合場合、無障礙設施、特色氛圍
+- 情境標籤（飲控友善、適合工作、約會適合）
+- 設施標籤（包廂、吧台、插座、Wi-Fi）
 """
 from __future__ import annotations
 
@@ -45,6 +47,8 @@ class ReviewTagExtractor:
             'occasion': OccasionExtractor(),
             'accessibility': AccessibilityExtractor(),
             'ambiance': AmbianceExtractor(),
+            'scenario': ScenarioExtractor(),
+            'facility': FacilityExtractor(),
         }
 
     def extract_all_tags(
@@ -529,3 +533,66 @@ class AmbianceExtractor(BaseTagExtractor):
     def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
         """提取特色氛圍標籤"""
         return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class ScenarioExtractor(BaseTagExtractor):
+    """情境標籤提取器 (MVP 核心需求)"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'diet_friendly': [
+                r'(健康|低卡|低熱量|輕食)',
+                r'(沙拉|健身餐|減脂|增肌)',
+                r'(低GI|無糖|少油|清淡)',
+                r'(養生|原型食物|高蛋白)',
+            ],
+            'work_friendly': [
+                r'(辦公|工作|讀書|唸書)',
+                r'(Wi-Fi|WiFi|wifi|網路).*(快|穩|好)',
+                r'(插座|充電).*(多|方便|有)',
+                r'(適合|很適合).*(工作|讀書|辦公)',
+                r'(安靜|不吵).*(適合|可以).*(工作|讀書)',
+            ],
+            'date_friendly': [
+                r'(約會|情侶|浪漫)',
+                r'(氣氛|氛圍).*(好|很棒|浪漫)',
+                r'(適合|很適合).*(約會|情侶|兩個人)',
+                r'(燭光|私密|隱密)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取情境標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class FacilityExtractor(BaseTagExtractor):
+    """設施標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'has_private_room': [
+                r'(有包廂|包廂|獨立包間)',
+                r'(包廂|VIP).*(可以|能夠|有)',
+                r'(私人|獨立).*(空間|房間|包廂)',
+            ],
+            'has_counter': [
+                r'(吧台|吧檯|板前)',
+                r'(單人|一個人).*(吧台|座位)',
+                r'(坐吧台|吧台座)',
+            ],
+            'has_power_outlet': [
+                r'(插座|充電|電源)',
+                r'(有插座|插座多|可以充電)',
+                r'(每個座位|桌邊).*(插座|充電)',
+            ],
+            'has_wifi': [
+                r'(Wi-Fi|WiFi|wifi|無線網路)',
+                r'(有網路|提供網路|免費網路)',
+                r'(上網|連網).*(方便|可以)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取設施標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.7)
