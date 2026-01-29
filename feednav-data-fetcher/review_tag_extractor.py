@@ -1,7 +1,10 @@
 """
 評論標籤提取器
 
-從餐廳評論中提取環境、衛生、服務、寵物政策、付款方式、空氣品質等標籤。
+從餐廳評論中提取標籤，包含：
+- 環境、衛生、服務、寵物政策、付款方式、空氣品質
+- 價格感受、等候與訂位、停車交通、用餐限制
+- 適合場合、無障礙設施、特色氛圍
 """
 from __future__ import annotations
 
@@ -34,7 +37,14 @@ class ReviewTagExtractor:
             'service': ServiceTagExtractor(),
             'pet_policy': PetPolicyExtractor(),
             'payment': PaymentMethodExtractor(),
-            'air_quality': AirQualityExtractor()
+            'air_quality': AirQualityExtractor(),
+            'price_perception': PricePerceptionExtractor(),
+            'waiting': WaitingExtractor(),
+            'parking': ParkingExtractor(),
+            'dining_rules': DiningRulesExtractor(),
+            'occasion': OccasionExtractor(),
+            'accessibility': AccessibilityExtractor(),
+            'ambiance': AmbianceExtractor(),
         }
 
     def extract_all_tags(
@@ -352,4 +362,170 @@ class AirQualityExtractor(BaseTagExtractor):
 
     def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
         """提取空氣品質標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class PricePerceptionExtractor(BaseTagExtractor):
+    """價格感受標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'cp_value_high': [
+                r'(CP值|cp值).*(高|很高|超高)',
+                r'(划算|物超所值|便宜又好吃)',
+                r'(價格|價位).*(實惠|親民|便宜)',
+            ],
+            'expensive': [
+                r'(價格|價位).*(偏貴|很貴|太貴|不便宜)',
+                r'(貴|有點貴|偏貴)',
+            ],
+            'large_portion': [
+                r'(份量|分量).*(大|很大|超大|十足)',
+                r'(吃很飽|吃不完|量很多)',
+            ],
+            'small_portion': [
+                r'(份量|分量).*(少|很少|太少|小)',
+                r'(吃不飽|量太少)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取價格感受標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class WaitingExtractor(BaseTagExtractor):
+    """等候與訂位標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'need_queue': [
+                r'(排隊|排很久|要等|等很久)',
+                r'(人很多|大排長龍|人潮)',
+            ],
+            'no_wait': [
+                r'(不用等|不用排|馬上入座)',
+                r'(人不多|沒什麼人)',
+            ],
+            'reservation_recommended': [
+                r'(要訂位|先訂位|建議訂位)',
+                r'(沒訂位|不訂位).*(吃不到|沒位子)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取等候與訂位標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class ParkingExtractor(BaseTagExtractor):
+    """停車交通標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'parking_easy': [
+                r'(有停車場|停車方便|好停車)',
+                r'(停車位|車位).*(很多|充足)',
+            ],
+            'parking_difficult': [
+                r'(不好停車|停車困難|難停車)',
+                r'(沒停車位|沒有車位)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取停車交通標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class DiningRulesExtractor(BaseTagExtractor):
+    """用餐限制標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'time_limit': [
+                r'(限時|用餐時間|時間限制)',
+                r'(\d+分鐘|1.5小時|90分)',
+            ],
+            'minimum_charge': [
+                r'(低消|最低消費)',
+                r'(每人|每位).*(消費|\d+元)',
+            ],
+            'no_time_limit': [
+                r'(不限時|沒有限時)',
+                r'(可以坐很久|慢慢吃)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取用餐限制標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class OccasionExtractor(BaseTagExtractor):
+    """適合場合標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'solo_friendly': [
+                r'(一個人|獨自|單人).*(吃|用餐|來)',
+                r'(適合|很適合).*(一個人|獨食)',
+            ],
+            'group_friendly': [
+                r'(聚餐|朋友聚會|家庭聚餐)',
+                r'(適合|很適合).*(聚餐|多人)',
+                r'(慶生|慶祝)',
+            ],
+            'business_friendly': [
+                r'(商務|談事情|招待客戶)',
+                r'(適合|很適合).*(談公事|商務)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取適合場合標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class AccessibilityExtractor(BaseTagExtractor):
+    """無障礙設施標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'wheelchair_accessible': [
+                r'(輪椅|無障礙|電梯)',
+                r'(行動不便|推車).*(方便|可以)',
+            ],
+            'baby_chair': [
+                r'(兒童座椅|嬰兒椅|寶寶椅)',
+                r'(有提供|有).*(兒童椅|嬰兒座椅)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取無障礙設施標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class AmbianceExtractor(BaseTagExtractor):
+    """特色氛圍標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'good_view': [
+                r'(景觀|view|夜景|窗景).*(好|很棒|漂亮)',
+                r'(看得到|可以看).*(風景|夜景|街景)',
+            ],
+            'instagrammable': [
+                r'(網美|打卡|拍照|IG)',
+                r'(很好拍|超好拍|適合拍照)',
+            ],
+            'vintage_style': [
+                r'(復古|懷舊|老店|古早味)',
+                r'(傳統|老字號)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取特色氛圍標籤"""
         return self._extract_with_patterns(text, rating, base_confidence=0.6)

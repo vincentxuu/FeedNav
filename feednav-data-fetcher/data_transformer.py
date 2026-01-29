@@ -57,6 +57,40 @@ class DataTransformer:
                 'non_smoking': '禁菸環境',
                 'good_ventilation': '通風良好',
                 'poor_ventilation': '通風不佳'
+            },
+            'price_perception': {
+                'cp_value_high': 'CP值高',
+                'expensive': '價格偏貴',
+                'large_portion': '份量大',
+                'small_portion': '份量少'
+            },
+            'waiting': {
+                'need_queue': '需要排隊',
+                'no_wait': '免排隊',
+                'reservation_recommended': '建議訂位'
+            },
+            'parking': {
+                'parking_easy': '停車方便',
+                'parking_difficult': '停車困難'
+            },
+            'dining_rules': {
+                'time_limit': '用餐限時',
+                'minimum_charge': '有低消',
+                'no_time_limit': '不限時'
+            },
+            'occasion': {
+                'solo_friendly': '適合獨食',
+                'group_friendly': '適合聚餐',
+                'business_friendly': '適合商務'
+            },
+            'accessibility': {
+                'wheelchair_accessible': '無障礙設施',
+                'baby_chair': '有兒童座椅'
+            },
+            'ambiance': {
+                'good_view': '景觀優美',
+                'instagrammable': '網美打卡',
+                'vintage_style': '復古風格'
             }
         }
     
@@ -215,7 +249,12 @@ class DataTransformer:
         positive_tags = {
             'electronic_payment', 'multiple_payment', 'quiet', 'romantic',
             'family_friendly', 'clean', 'good_service', 'fast_service',
-            'pet_friendly', 'non_smoking', 'good_ventilation'
+            'pet_friendly', 'non_smoking', 'good_ventilation',
+            # 新增標籤
+            'cp_value_high', 'large_portion', 'no_wait', 'parking_easy',
+            'no_time_limit', 'solo_friendly', 'group_friendly', 'business_friendly',
+            'wheelchair_accessible', 'baby_chair', 'good_view', 'instagrammable',
+            'vintage_style'
         }
         return tag_type in positive_tags
 
