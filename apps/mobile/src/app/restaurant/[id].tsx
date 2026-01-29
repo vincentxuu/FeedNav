@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { ScrollView, Linking, Dimensions } from 'react-native'
+import { useState, useEffect, useCallback } from 'react'
+import { ScrollView, Linking, Dimensions, Share, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { YStack, XStack, Text, Image, Separator } from 'tamagui'
+import { YStack, XStack, Text, Image, Separator, Spinner } from 'tamagui'
 import {
   ArrowLeft,
   Star,
@@ -13,10 +13,18 @@ import {
   Heart,
   Navigation,
   Share2,
+  Check,
+  CheckCircle,
 } from '@tamagui/lucide-icons'
 
-import { Button, Badge, Card } from '@feednav/ui'
-import { useRestaurant, useAddFavorite, useRemoveFavorite, useAddVisit } from '@/lib/queries'
+import { Button, Badge } from '@feednav/ui'
+import {
+  useRestaurant,
+  useAddFavorite,
+  useRemoveFavorite,
+  useAddVisit,
+  useRemoveVisit,
+} from '@/lib/queries'
 import { useAuth } from '@/lib/auth-context'
 
 const { width } = Dimensions.get('window')
@@ -25,66 +33,136 @@ export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { isAuthenticated } = useAuth()
-  const { data, isLoading } = useRestaurant(id)
+  const { data, isLoading, refetch } = useRestaurant(id)
   const addFavorite = useAddFavorite()
   const removeFavorite = useRemoveFavorite()
   const addVisit = useAddVisit()
+  const removeVisit = useRemoveVisit()
 
   const restaurant = data?.data
 
-  const [isFavorited, setIsFavorited] = useState(restaurant?.is_favorited ?? false)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [isVisited, setIsVisited] = useState(false)
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
+  const [isVisitLoading, setIsVisitLoading] = useState(false)
 
-  if (isLoading || !restaurant) {
+  // Sync state with restaurant data
+  useEffect(() => {
+    if (restaurant) {
+      setIsFavorited(restaurant.is_favorited ?? false)
+      setIsVisited(restaurant.is_visited ?? false)
+    }
+  }, [restaurant])
+
+  const handleToggleFavorite = useCallback(async () => {
+    if (!isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
+
+    if (!restaurant) return
+
+    setIsFavoriteLoading(true)
+    try {
+      const restaurantId = parseInt(restaurant.id, 10)
+      if (isFavorited) {
+        await removeFavorite.mutateAsync(restaurantId)
+        setIsFavorited(false)
+      } else {
+        await addFavorite.mutateAsync(restaurantId)
+        setIsFavorited(true)
+      }
+    } catch (error) {
+      Alert.alert('錯誤', '操作失敗，請稍後再試')
+    } finally {
+      setIsFavoriteLoading(false)
+    }
+  }, [isAuthenticated, restaurant, isFavorited, router, addFavorite, removeFavorite])
+
+  const handleToggleVisit = useCallback(async () => {
+    if (!isAuthenticated) {
+      router.push('/auth/login')
+      return
+    }
+
+    if (!restaurant) return
+
+    setIsVisitLoading(true)
+    try {
+      const restaurantId = parseInt(restaurant.id, 10)
+      if (isVisited) {
+        await removeVisit.mutateAsync(restaurantId)
+        setIsVisited(false)
+      } else {
+        await addVisit.mutateAsync(restaurantId)
+        setIsVisited(true)
+      }
+    } catch (error) {
+      Alert.alert('錯誤', '操作失敗，請稍後再試')
+    } finally {
+      setIsVisitLoading(false)
+    }
+  }, [isAuthenticated, restaurant, isVisited, router, addVisit, removeVisit])
+
+  const handleNavigate = useCallback(() => {
+    if (restaurant?.latitude && restaurant?.longitude) {
+      const url = `https://maps.google.com/?daddr=${restaurant.latitude},${restaurant.longitude}`
+      Linking.openURL(url)
+    }
+  }, [restaurant])
+
+  const handleCall = useCallback(() => {
+    if (restaurant?.phone) {
+      Linking.openURL(`tel:${restaurant.phone}`)
+    }
+  }, [restaurant])
+
+  const handleWebsite = useCallback(() => {
+    if (restaurant?.website) {
+      Linking.openURL(restaurant.website)
+    }
+  }, [restaurant])
+
+  const handleShare = useCallback(async () => {
+    if (!restaurant) return
+
+    try {
+      await Share.share({
+        title: restaurant.name,
+        message: `來看看這間餐廳：${restaurant.name}\n${restaurant.address || ''}\nhttps://feednav.cc/restaurant/${restaurant.id}`,
+      })
+    } catch (error) {
+      // User cancelled or error occurred
+    }
+  }, [restaurant])
+
+  if (isLoading) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
-        <YStack flex={1} alignItems="center" justifyContent="center">
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <YStack flex={1} alignItems="center" justifyContent="center" gap="$4">
+          <Spinner size="large" color="$primary" />
           <Text color="$textMuted">載入中...</Text>
         </YStack>
       </SafeAreaView>
     )
   }
 
-  const handleToggleFavorite = async () => {
-    if (!isAuthenticated) {
-      router.push('/auth/login')
-      return
-    }
-
-    const restaurantId = parseInt(restaurant.id, 10)
-    if (isFavorited) {
-      await removeFavorite.mutateAsync(restaurantId)
-    } else {
-      await addFavorite.mutateAsync(restaurantId)
-    }
-    setIsFavorited(!isFavorited)
-  }
-
-  const handleMarkVisited = async () => {
-    if (!isAuthenticated) {
-      router.push('/auth/login')
-      return
-    }
-
-    await addVisit.mutateAsync(parseInt(restaurant.id, 10))
-  }
-
-  const handleNavigate = () => {
-    if (restaurant.latitude && restaurant.longitude) {
-      const url = `https://maps.google.com/?daddr=${restaurant.latitude},${restaurant.longitude}`
-      Linking.openURL(url)
-    }
-  }
-
-  const handleCall = () => {
-    if (restaurant.phone) {
-      Linking.openURL(`tel:${restaurant.phone}`)
-    }
-  }
-
-  const handleWebsite = () => {
-    if (restaurant.website) {
-      Linking.openURL(restaurant.website)
-    }
+  if (!restaurant) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <YStack flex={1} alignItems="center" justifyContent="center" gap="$4" padding="$6">
+          <Text fontSize={18} fontWeight="600" color="$color">
+            找不到餐廳
+          </Text>
+          <Text color="$textMuted" textAlign="center">
+            此餐廳可能已被移除或不存在
+          </Text>
+          <Button variant="primary" onPress={() => router.back()}>
+            返回
+          </Button>
+        </YStack>
+      </SafeAreaView>
+    )
   }
 
   return (
@@ -107,6 +185,10 @@ export default function RestaurantDetailScreen() {
             backgroundColor="$background"
             borderRadius="$full"
             onPress={() => router.back()}
+            shadowColor="black"
+            shadowOffset={{ width: 0, height: 1 }}
+            shadowOpacity={0.1}
+            shadowRadius={2}
           >
             <ArrowLeft size={24} />
           </Button>
@@ -117,18 +199,32 @@ export default function RestaurantDetailScreen() {
               backgroundColor="$background"
               borderRadius="$full"
               onPress={handleToggleFavorite}
+              disabled={isFavoriteLoading}
+              shadowColor="black"
+              shadowOffset={{ width: 0, height: 1 }}
+              shadowOpacity={0.1}
+              shadowRadius={2}
             >
-              <Heart
-                size={24}
-                color={isFavorited ? '$error' : '$color'}
-                fill={isFavorited ? '$error' : 'transparent'}
-              />
+              {isFavoriteLoading ? (
+                <Spinner size="small" color="$primary" />
+              ) : (
+                <Heart
+                  size={24}
+                  color={isFavorited ? '#ef4444' : '$color'}
+                  fill={isFavorited ? '#ef4444' : 'transparent'}
+                />
+              )}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               backgroundColor="$background"
               borderRadius="$full"
+              onPress={handleShare}
+              shadowColor="black"
+              shadowOffset={{ width: 0, height: 1 }}
+              shadowOpacity={0.1}
+              shadowRadius={2}
             >
               <Share2 size={24} />
             </Button>
@@ -137,25 +233,52 @@ export default function RestaurantDetailScreen() {
 
         <ScrollView>
           {/* Image */}
-          {restaurant.image_url && (
+          {restaurant.image_url ? (
             <Image
               source={{ uri: restaurant.image_url }}
               width={width}
               height={250}
               objectFit="cover"
             />
+          ) : (
+            <YStack
+              width={width}
+              height={250}
+              backgroundColor="$backgroundPress"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <MapPin size={48} color="$textMuted" />
+            </YStack>
           )}
 
           <YStack padding="$4" gap="$4">
             {/* Title & Rating */}
             <YStack gap="$2">
-              <Text fontSize={24} fontWeight="700" color="$color">
-                {restaurant.name}
-              </Text>
-              <XStack alignItems="center" gap="$3">
+              <XStack alignItems="center" gap="$2">
+                <Text fontSize={24} fontWeight="700" color="$color" flex={1}>
+                  {restaurant.name}
+                </Text>
+                {isVisited && (
+                  <XStack
+                    backgroundColor="$success"
+                    paddingHorizontal="$2"
+                    paddingVertical="$1"
+                    borderRadius="$full"
+                    alignItems="center"
+                    gap="$1"
+                  >
+                    <CheckCircle size={14} color="white" />
+                    <Text fontSize={12} color="white" fontWeight="600">
+                      已訪
+                    </Text>
+                  </XStack>
+                )}
+              </XStack>
+              <XStack alignItems="center" gap="$3" flexWrap="wrap">
                 <XStack alignItems="center" gap="$1">
-                  <Star size={18} color="$rating" fill="$rating" />
-                  <Text fontSize={16} fontWeight="600">
+                  <Star size={18} color="#fbbf24" fill="#fbbf24" />
+                  <Text fontSize={16} fontWeight="600" color="$color">
                     {restaurant.rating?.toFixed(1) || 'N/A'}
                   </Text>
                 </XStack>
@@ -165,6 +288,12 @@ export default function RestaurantDetailScreen() {
                 <Text color="$textSecondary">
                   {'$'.repeat(restaurant.price_level || 1)}
                 </Text>
+                {restaurant.district && (
+                  <>
+                    <Text color="$textMuted">·</Text>
+                    <Text color="$textSecondary">{restaurant.district}</Text>
+                  </>
+                )}
               </XStack>
             </YStack>
 
@@ -182,12 +311,32 @@ export default function RestaurantDetailScreen() {
             {/* Action Buttons */}
             <XStack gap="$3">
               <Button flex={1} variant="primary" onPress={handleNavigate}>
-                <Navigation size={18} />
-                <Text color="white">導航</Text>
+                <Navigation size={18} color="white" />
+                <Text color="white" fontWeight="600">
+                  導航
+                </Text>
               </Button>
-              <Button flex={1} variant="outline" onPress={handleMarkVisited}>
-                <MapPin size={18} />
-                <Text>標記已訪</Text>
+              <Button
+                flex={1}
+                variant={isVisited ? 'secondary' : 'outline'}
+                onPress={handleToggleVisit}
+                disabled={isVisitLoading}
+              >
+                {isVisitLoading ? (
+                  <Spinner size="small" color="$primary" />
+                ) : isVisited ? (
+                  <>
+                    <Check size={18} color="white" />
+                    <Text color="white" fontWeight="600">
+                      已訪
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <MapPin size={18} />
+                    <Text fontWeight="600">標記已訪</Text>
+                  </>
+                )}
               </Button>
             </XStack>
 
@@ -196,9 +345,14 @@ export default function RestaurantDetailScreen() {
             {/* Details */}
             <YStack gap="$3">
               {restaurant.address && (
-                <XStack alignItems="flex-start" gap="$3">
+                <XStack
+                  alignItems="flex-start"
+                  gap="$3"
+                  pressStyle={{ opacity: 0.7 }}
+                  onPress={handleNavigate}
+                >
                   <MapPin size={20} color="$textMuted" />
-                  <Text flex={1} color="$color">
+                  <Text flex={1} color="$primary">
                     {restaurant.address}
                   </Text>
                 </XStack>
@@ -224,7 +378,7 @@ export default function RestaurantDetailScreen() {
                   onPress={handleWebsite}
                 >
                   <Globe size={20} color="$textMuted" />
-                  <Text color="$primary" numberOfLines={1}>
+                  <Text color="$primary" numberOfLines={1} flex={1}>
                     {restaurant.website}
                   </Text>
                 </XStack>
@@ -239,6 +393,7 @@ export default function RestaurantDetailScreen() {
                       <Text
                         color={restaurant.is_open_now ? '$success' : '$error'}
                         fontWeight="600"
+                        marginTop="$1"
                       >
                         {restaurant.is_open_now ? '營業中' : '已打烊'}
                       </Text>
@@ -262,6 +417,9 @@ export default function RestaurantDetailScreen() {
                 </YStack>
               </>
             )}
+
+            {/* Bottom Spacing */}
+            <YStack height={20} />
           </YStack>
         </ScrollView>
       </YStack>

@@ -3,17 +3,19 @@ import { FlatList, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { YStack, XStack, Text } from 'tamagui'
-import { Search, Filter, X } from '@tamagui/lucide-icons'
+import { Search, Filter, X, Dice5 } from '@tamagui/lucide-icons'
 
 import { RestaurantCard, Button, Badge, Input } from '@feednav/ui'
 import { useRestaurants } from '@/lib/queries'
 import { FilterSheet, type FilterState } from '@/components/FilterSheet'
+import { RandomPicker } from '@/components/RandomPicker'
 
 export default function HomeScreen() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState<FilterState>({})
   const [showFilters, setShowFilters] = useState(false)
+  const [showRandomPicker, setShowRandomPicker] = useState(false)
 
   const queryFilters = useMemo(
     () => ({
@@ -66,9 +68,19 @@ export default function HomeScreen() {
       <YStack flex={1} backgroundColor="$background">
         {/* Header */}
         <YStack padding="$4" gap="$3">
-          <Text fontSize={28} fontWeight="700" color="$color">
-            探索美食
-          </Text>
+          <XStack alignItems="center" justifyContent="space-between">
+            <Text fontSize={28} fontWeight="700" color="$color">
+              探索美食
+            </Text>
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => setShowRandomPicker(true)}
+              borderRadius="$full"
+            >
+              <Dice5 size={20} color="$primary" />
+            </Button>
+          </XStack>
           <XStack gap="$2">
             <XStack
               flex={1}
@@ -195,6 +207,12 @@ export default function HomeScreen() {
         onOpenChange={setShowFilters}
         filters={filters}
         onApply={handleApplyFilters}
+      />
+
+      {/* Random Picker */}
+      <RandomPicker
+        open={showRandomPicker}
+        onOpenChange={setShowRandomPicker}
       />
     </SafeAreaView>
   )
