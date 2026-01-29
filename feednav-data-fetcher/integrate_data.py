@@ -128,10 +128,20 @@ def _print_summary(
         for district, count in list(stats['district_distribution'].items())[:5]:
             print(f"  {district}: {count} 間")
 
+    if stats.get('category_distribution'):
+        print(f"\n主分類分佈：")
+        for category, count in stats['category_distribution'].items():
+            print(f"  {category}: {count} 間")
+
     if stats['cuisine_distribution']:
         print(f"\n菜系分佈（前5名）：")
         for cuisine, count in list(stats['cuisine_distribution'].items())[:5]:
             print(f"  {cuisine}: {count} 間")
+
+    # 設施統計
+    print(f"\n=== 設施統計 ===")
+    print(f"有 Wi-Fi：{stats.get('has_wifi_count', 0)} 間")
+    print(f"有插座：{stats.get('has_power_outlet_count', 0)} 間")
 
     print(f"\n=== 資料完整性檢查 ===")
     integrity = inserter.validate_data_integrity()
@@ -150,9 +160,11 @@ def main() -> int:
     """
     if len(sys.argv) < 3:
         print("使用方式: python integrate_data.py <json_file_path> <database_path> [--quiet]")
-        print("範例: python integrate_data.py taipei_restaurants_20231201.json ../FeedNav-Serverless/database.db")
+        print("範例: python integrate_data.py taipei_restaurants_20260128.json ./temp_import.db")
         print("參數:")
         print("  --quiet  安靜模式，減少輸出訊息")
+        print("")
+        print("提示: 整合到遠端 D1 資料庫請參考 README.md")
         return 1
 
     json_file_path = sys.argv[1]

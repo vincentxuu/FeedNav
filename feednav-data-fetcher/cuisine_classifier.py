@@ -2,6 +2,7 @@
 菜系分類器
 
 根據餐廳名稱、Google 類型和評論內容分類餐廳菜系。
+支援主分類（餐廳/甜點/咖啡廳）判斷。
 """
 from __future__ import annotations
 
@@ -17,6 +18,21 @@ CLASSIFIER_CONFIG = {
     'CONFIDENCE_THRESHOLD': 0.3, # 最低信心度門檻
     'MIN_SCORE_THRESHOLD': 2,    # 最低分數門檻
     'UNCLASSIFIED_LABEL': '未分類',
+}
+
+# 主分類關鍵字
+CATEGORY_KEYWORDS = {
+    '甜點': [
+        '甜點', '蛋糕', '冰', '甜品', '烘焙', '麵包', 'Dessert', 'Bakery',
+        '甜食', '糕點', '餅乾', '巧克力', '馬卡龍', '泡芙', '塔', '派',
+        '冰淇淋', '霜淇淋', '雪花冰', '刨冰', '豆花', '仙草',
+        '手搖', '飲料', '奶茶', '珍珠', '鮮茶'
+    ],
+    '咖啡廳': [
+        '咖啡', 'Coffee', 'Cafe', 'Café', '茶館', '茶室', '茶屋',
+        '咖啡廳', '咖啡店', '咖啡館', '手沖', '拿鐵', '義式咖啡',
+        '精品咖啡', '烘豆', '自家烘焙'
+    ]
 }
 
 
@@ -239,3 +255,46 @@ class CuisineClassifier:
         final_scores = self.combine_scores(name_score, types_score, review_score)
 
         return self.get_top_cuisine(final_scores)
+
+    def classify_category(self, restaurant_data: dict[str, Any]) -> str:
+        """
+        判斷店家主分類：餐廳/甜點/咖啡廳
+
+        根據店名、Google 類型和菜系類型綜合判斷。
+
+        Args:
+            restaurant_data: 餐廳資料
+
+        Returns:
+            主分類：'餐廳'、'甜點' 或 '咖啡廳'
+        """
+        name = restaurant_data.get('name', '')
+        google_types = restaurant_data.get('types', [])
+        cuisine_type = restaurant_data.get('cuisine_type', '')
+
+        # 優先判斷店名
+        name_lower = name.lower()
+        for keyword in CATEGORY_KEYWORDS['甜點']:
+            if keyword.lower() in name_lower:
+                return '甜點'
+
+        for keyword in CATEGORY_KEYWORDS['咖啡廳']:
+            if keyword.lower() in name_lower:
+                return '咖啡廳'
+
+        # 次要判斷 Google 類型
+        if 'bakery' in google_types:
+            return '甜點'
+
+        if 'cafe' in google_types and 'restaurant' not in google_types:
+            return '咖啡廳'
+
+        # 根據菜系類型判斷
+        if cuisine_type == '甜點':
+            return '甜點'
+
+        if cuisine_type == '咖啡廳':
+            return '咖啡廳'
+
+        # 預設為餐廳
+        return '餐廳'

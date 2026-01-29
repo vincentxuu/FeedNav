@@ -1,7 +1,12 @@
 """
 評論標籤提取器
 
-從餐廳評論中提取環境、衛生、服務、寵物政策、付款方式、空氣品質等標籤。
+從餐廳評論中提取標籤，包含：
+- 環境、衛生、服務、寵物政策、付款方式、空氣品質
+- 價格感受、等候與訂位、停車交通、用餐限制
+- 適合場合、無障礙設施、特色氛圍
+- 情境標籤（飲控友善、適合工作、約會適合）
+- 設施標籤（包廂、吧台、插座、Wi-Fi）
 """
 from __future__ import annotations
 
@@ -34,7 +39,16 @@ class ReviewTagExtractor:
             'service': ServiceTagExtractor(),
             'pet_policy': PetPolicyExtractor(),
             'payment': PaymentMethodExtractor(),
-            'air_quality': AirQualityExtractor()
+            'air_quality': AirQualityExtractor(),
+            'price_perception': PricePerceptionExtractor(),
+            'waiting': WaitingExtractor(),
+            'parking': ParkingExtractor(),
+            'dining_rules': DiningRulesExtractor(),
+            'occasion': OccasionExtractor(),
+            'accessibility': AccessibilityExtractor(),
+            'ambiance': AmbianceExtractor(),
+            'scenario': ScenarioExtractor(),
+            'facility': FacilityExtractor(),
         }
 
     def extract_all_tags(
@@ -353,3 +367,389 @@ class AirQualityExtractor(BaseTagExtractor):
     def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
         """提取空氣品質標籤"""
         return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class PricePerceptionExtractor(BaseTagExtractor):
+    """價格感受標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'cp_value_high': [
+                r'(CP值|cp值).*(高|很高|超高)',
+                r'(划算|物超所值|便宜又好吃)',
+                r'(價格|價位).*(實惠|親民|便宜)',
+            ],
+            'expensive': [
+                r'(價格|價位).*(偏貴|很貴|太貴|不便宜)',
+                r'(貴|有點貴|偏貴)',
+            ],
+            'large_portion': [
+                r'(份量|分量).*(大|很大|超大|十足)',
+                r'(吃很飽|吃不完|量很多)',
+            ],
+            'small_portion': [
+                r'(份量|分量).*(少|很少|太少|小)',
+                r'(吃不飽|量太少)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取價格感受標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class WaitingExtractor(BaseTagExtractor):
+    """等候與訂位標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'need_queue': [
+                r'(排隊|排很久|要等|等很久)',
+                r'(人很多|大排長龍|人潮)',
+            ],
+            'no_wait': [
+                r'(不用等|不用排|馬上入座)',
+                r'(人不多|沒什麼人)',
+            ],
+            'reservation_recommended': [
+                r'(要訂位|先訂位|建議訂位)',
+                r'(沒訂位|不訂位).*(吃不到|沒位子)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取等候與訂位標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class ParkingExtractor(BaseTagExtractor):
+    """停車交通標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'parking_easy': [
+                r'(有停車場|停車方便|好停車)',
+                r'(停車位|車位).*(很多|充足)',
+            ],
+            'parking_difficult': [
+                r'(不好停車|停車困難|難停車)',
+                r'(沒停車位|沒有車位)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取停車交通標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class DiningRulesExtractor(BaseTagExtractor):
+    """用餐限制標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'time_limit': [
+                r'(限時|用餐時間|時間限制)',
+                r'(\d+分鐘|1.5小時|90分)',
+            ],
+            'minimum_charge': [
+                r'(低消|最低消費)',
+                r'(每人|每位).*(消費|\d+元)',
+            ],
+            'no_time_limit': [
+                r'(不限時|沒有限時)',
+                r'(可以坐很久|慢慢吃)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取用餐限制標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class OccasionExtractor(BaseTagExtractor):
+    """適合場合標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'solo_friendly': [
+                r'(一個人|獨自|單人).*(吃|用餐|來)',
+                r'(適合|很適合).*(一個人|獨食)',
+            ],
+            'group_friendly': [
+                r'(聚餐|朋友聚會|家庭聚餐)',
+                r'(適合|很適合).*(聚餐|多人)',
+                r'(慶生|慶祝)',
+            ],
+            'business_friendly': [
+                r'(商務|談事情|招待客戶)',
+                r'(適合|很適合).*(談公事|商務)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取適合場合標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class AccessibilityExtractor(BaseTagExtractor):
+    """無障礙設施標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'wheelchair_accessible': [
+                r'(輪椅|無障礙|電梯)',
+                r'(行動不便|推車).*(方便|可以)',
+            ],
+            'baby_chair': [
+                r'(兒童座椅|嬰兒椅|寶寶椅)',
+                r'(有提供|有).*(兒童椅|嬰兒座椅)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取無障礙設施標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class AmbianceExtractor(BaseTagExtractor):
+    """特色氛圍標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'good_view': [
+                r'(景觀|view|夜景|窗景).*(好|很棒|漂亮)',
+                r'(看得到|可以看).*(風景|夜景|街景)',
+            ],
+            'instagrammable': [
+                r'(網美|打卡|拍照|IG)',
+                r'(很好拍|超好拍|適合拍照)',
+            ],
+            'vintage_style': [
+                r'(復古|懷舊|老店|古早味)',
+                r'(傳統|老字號)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取特色氛圍標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class ScenarioExtractor(BaseTagExtractor):
+    """情境標籤提取器 (MVP 核心需求)"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'diet_friendly': [
+                r'(健康|低卡|低熱量|輕食)',
+                r'(沙拉|健身餐|減脂|增肌)',
+                r'(低GI|無糖|少油|清淡)',
+                r'(養生|原型食物|高蛋白)',
+            ],
+            'work_friendly': [
+                r'(辦公|工作|讀書|唸書)',
+                r'(Wi-Fi|WiFi|wifi|網路).*(快|穩|好)',
+                r'(插座|充電).*(多|方便|有)',
+                r'(適合|很適合).*(工作|讀書|辦公)',
+                r'(安靜|不吵).*(適合|可以).*(工作|讀書)',
+            ],
+            'date_friendly': [
+                r'(約會|情侶|浪漫)',
+                r'(氣氛|氛圍).*(好|很棒|浪漫)',
+                r'(適合|很適合).*(約會|情侶|兩個人)',
+                r'(燭光|私密|隱密)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取情境標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.6)
+
+
+class FacilityExtractor(BaseTagExtractor):
+    """設施標籤提取器"""
+
+    def __init__(self) -> None:
+        self.patterns: dict[str, list[str]] = {
+            'has_private_room': [
+                r'(有包廂|包廂|獨立包間)',
+                r'(包廂|VIP).*(可以|能夠|有)',
+                r'(私人|獨立).*(空間|房間|包廂)',
+            ],
+            'has_counter': [
+                r'(吧台|吧檯|板前)',
+                r'(單人|一個人).*(吧台|座位)',
+                r'(坐吧台|吧台座)',
+            ],
+            'has_power_outlet': [
+                r'(插座|充電|電源)',
+                r'(有插座|插座多|可以充電)',
+                r'(每個座位|桌邊).*(插座|充電)',
+            ],
+            'has_wifi': [
+                r'(Wi-Fi|WiFi|wifi|無線網路)',
+                r'(有網路|提供網路|免費網路)',
+                r'(上網|連網).*(方便|可以)',
+            ],
+            'has_outdoor_seating': [
+                r'(戶外|露天|露台|陽台).*(座位|區|用餐)',
+                r'(戶外座|室外座)',
+                r'(可以坐|有位子).*(外面|戶外|露天)',
+            ],
+            'has_projector': [
+                r'(投影機|投影設備|大螢幕)',
+                r'(可以投影|投影播放)',
+                r'(投影|播放).*(看球|比賽|電影)',
+            ],
+            'has_reservation': [
+                r'(可以訂位|接受訂位|線上訂位)',
+                r'(訂位|預約).*(方便|簡單|可以)',
+                r'(電話|網路).*(訂位|預約)',
+            ],
+        }
+
+    def extract(self, text: str, rating: int) -> list[dict[str, Any]]:
+        """提取設施標籤"""
+        return self._extract_with_patterns(text, rating, base_confidence=0.7)
+
+
+class VisitDurationExtractor:
+    """用餐時間提取器"""
+
+    # 時間關鍵字模式
+    DURATION_PATTERNS = [
+        # 小時格式
+        (r'(\d+(?:\.\d+)?)\s*(?:小時|個小時|hrs?|hours?)', 'hours'),
+        (r'(\d+)\s*(?:個半小時|個半鐘頭)', 'hours_half'),
+        # 分鐘格式
+        (r'(\d+)\s*(?:分鐘|分|mins?|minutes?)', 'minutes'),
+        # 組合格式 (1小時30分)
+        (r'(\d+)\s*(?:小時|個小時)\s*(\d+)\s*(?:分鐘?|分)', 'hours_minutes'),
+        # 範圍格式 (1-2小時)
+        (r'(\d+)\s*[-~至到]\s*(\d+)\s*(?:小時|個小時)', 'hours_range'),
+        # 描述性格式
+        (r'(半小時|半個小時)', 'half_hour'),
+        (r'(一小時|一個小時)', 'one_hour'),
+        (r'(兩小時|兩個小時|2小時)', 'two_hours'),
+    ]
+
+    # 上下文關鍵字 (用餐時間相關)
+    CONTEXT_KEYWORDS = [
+        r'用餐.{0,5}(?:時間|約|大概|差不多)',
+        r'(?:吃了|待了|坐了|花了).{0,5}',
+        r'(?:用餐|吃飯).{0,5}(?:大約|約|差不多)',
+        r'(?:限時|用餐時間)',
+    ]
+
+    def extract_duration(self, reviews: list[dict[str, Any] | str]) -> int | None:
+        """
+        從評論中提取平均用餐時間
+
+        Args:
+            reviews: 評論列表
+
+        Returns:
+            平均用餐時間（分鐘），若無法提取則返回 None
+        """
+        if not reviews:
+            return None
+
+        durations: list[int] = []
+
+        for review in reviews:
+            if isinstance(review, dict):
+                text = review.get('text', '')
+            else:
+                text = str(review)
+
+            if not text:
+                continue
+
+            duration = self._extract_from_text(text)
+            if duration:
+                durations.append(duration)
+
+        if not durations:
+            return None
+
+        # 返回中位數以避免極端值影響
+        durations.sort()
+        mid = len(durations) // 2
+        if len(durations) % 2 == 0:
+            return (durations[mid - 1] + durations[mid]) // 2
+        return durations[mid]
+
+    def _extract_from_text(self, text: str) -> int | None:
+        """
+        從單則評論中提取用餐時間
+
+        Args:
+            text: 評論文字
+
+        Returns:
+            用餐時間（分鐘）
+        """
+        # 檢查是否有上下文關鍵字
+        has_context = any(
+            re.search(pattern, text, re.IGNORECASE)
+            for pattern in self.CONTEXT_KEYWORDS
+        )
+
+        for pattern, pattern_type in self.DURATION_PATTERNS:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                minutes = self._parse_duration(match, pattern_type)
+                if minutes and 10 <= minutes <= 300:  # 合理範圍：10分鐘到5小時
+                    # 有上下文時信心度更高
+                    if has_context or minutes >= 30:
+                        return minutes
+
+        return None
+
+    def _parse_duration(self, match: re.Match, pattern_type: str) -> int | None:
+        """
+        解析匹配結果為分鐘數
+
+        Args:
+            match: 正則匹配結果
+            pattern_type: 模式類型
+
+        Returns:
+            分鐘數
+        """
+        try:
+            if pattern_type == 'hours':
+                hours = float(match.group(1))
+                return int(hours * 60)
+
+            elif pattern_type == 'hours_half':
+                hours = int(match.group(1))
+                return hours * 60 + 30
+
+            elif pattern_type == 'minutes':
+                return int(match.group(1))
+
+            elif pattern_type == 'hours_minutes':
+                hours = int(match.group(1))
+                minutes = int(match.group(2))
+                return hours * 60 + minutes
+
+            elif pattern_type == 'hours_range':
+                min_hours = int(match.group(1))
+                max_hours = int(match.group(2))
+                avg_hours = (min_hours + max_hours) / 2
+                return int(avg_hours * 60)
+
+            elif pattern_type == 'half_hour':
+                return 30
+
+            elif pattern_type == 'one_hour':
+                return 60
+
+            elif pattern_type == 'two_hours':
+                return 120
+
+        except (ValueError, IndexError):
+            pass
+
+        return None

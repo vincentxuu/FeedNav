@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   district TEXT,
+  category TEXT DEFAULT '餐廳',
   cuisine_type TEXT,
   rating REAL,
   price_level INTEGER,
@@ -14,6 +15,11 @@ CREATE TABLE IF NOT EXISTS restaurants (
   description TEXT,
   latitude REAL,
   longitude REAL,
+  scenario_tags TEXT DEFAULT '[]',
+  has_wifi INTEGER,
+  has_power_outlet INTEGER,
+  seat_type TEXT DEFAULT '[]',
+  avg_visit_duration INTEGER,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -75,6 +81,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 -- 建立索引
 CREATE INDEX IF NOT EXISTS idx_restaurants_name ON restaurants(name);
 CREATE INDEX IF NOT EXISTS idx_restaurants_district ON restaurants(district);
+CREATE INDEX IF NOT EXISTS idx_restaurants_category ON restaurants(category);
 CREATE INDEX IF NOT EXISTS idx_restaurants_cuisine ON restaurants(cuisine_type);
 CREATE INDEX IF NOT EXISTS idx_restaurants_rating ON restaurants(rating);
 CREATE INDEX IF NOT EXISTS idx_restaurants_location ON restaurants(latitude, longitude);
@@ -122,15 +129,76 @@ SELECT id, email, password_hash, created_at, updated_at FROM users WHERE EXISTS 
 CREATE INDEX IF NOT EXISTS idx_social_accounts_user ON social_accounts(user_id);
 CREATE INDEX IF NOT EXISTS idx_social_accounts_provider ON social_accounts(provider, provider_id);
 
--- 插入示例標籤
+-- 插入基礎標籤
 INSERT OR IGNORE INTO tags (name, category, color, is_positive) VALUES
-('米其林推薦', 'award', 'yellow', 1),
-('寵物友善', 'amenity', 'green', 1),
-('素食可用', 'dietary', 'lightgreen', 1),
-('衛生良好', 'quality', 'blue', 1),
-('服務優質', 'service', 'purple', 1),
-('價格合理', 'price', 'orange', 1),
-('環境舒適', 'atmosphere', 'teal', 1),
-('停車方便', 'parking', 'gray', 1),
-('營業時間長', 'hours', 'pink', 1),
-('外送服務', 'delivery', 'indigo', 1);
+('米其林推薦', 'award', '#FFD700', 1),
+('寵物友善', 'pet_policy', '#4CAF50', 1),
+('禁止寵物', 'pet_policy', '#F44336', 0),
+('素食可用', 'dietary', '#8BC34A', 1),
+('衛生良好', 'hygiene', '#2196F3', 1),
+('衛生不佳', 'hygiene', '#F44336', 0),
+('服務優質', 'service', '#9C27B0', 1),
+('服務不佳', 'service', '#F44336', 0),
+('出餐快速', 'service', '#4CAF50', 1),
+('出餐較慢', 'service', '#FF9800', 0),
+('環境安靜', 'environment', '#00BCD4', 1),
+('環境吵雜', 'environment', '#FF5722', 0),
+('浪漫氛圍', 'environment', '#E91E63', 1),
+('親子友善', 'environment', '#FF9800', 1),
+('電子支付', 'payment', '#2196F3', 1),
+('僅收現金', 'payment', '#FFC107', 0),
+('多元支付', 'payment', '#4CAF50', 1),
+('通風良好', 'air_quality', '#4CAF50', 1),
+('通風不佳', 'air_quality', '#F44336', 0),
+('禁菸環境', 'air_quality', '#2196F3', 1),
+('允許吸菸', 'air_quality', '#FF9800', 0);
+
+-- 插入情境標籤
+INSERT OR IGNORE INTO tags (name, category, color, is_positive) VALUES
+('聚餐適合', 'scenario', '#FF6B6B', 1),
+('一個人也適合', 'scenario', '#4ECDC4', 1),
+('飲控友善', 'scenario', '#45B7D1', 1),
+('適合工作', 'scenario', '#96CEB4', 1),
+('約會適合', 'scenario', '#DDA0DD', 1),
+('適合獨食', 'occasion', '#4ECDC4', 1),
+('適合聚餐', 'occasion', '#FF6B6B', 1),
+('適合商務', 'occasion', '#607D8B', 1);
+
+-- 插入設施標籤
+INSERT OR IGNORE INTO tags (name, category, color, is_positive) VALUES
+('有包廂', 'facility', '#FFD93D', 1),
+('有吧台', 'facility', '#6BCB77', 1),
+('有插座', 'facility', '#4D96FF', 1),
+('有Wi-Fi', 'facility', '#FF6B6B', 1),
+('有戶外座位', 'facility', '#81C784', 1),
+('有投影設備', 'facility', '#7986CB', 1),
+('可訂位', 'facility', '#4DB6AC', 1),
+('無障礙設施', 'accessibility', '#2196F3', 1),
+('有兒童座椅', 'accessibility', '#9C27B0', 1);
+
+-- 插入價格感受標籤
+INSERT OR IGNORE INTO tags (name, category, color, is_positive) VALUES
+('CP值高', 'price_perception', '#4CAF50', 1),
+('價格偏貴', 'price_perception', '#FF9800', 0),
+('份量大', 'price_perception', '#8BC34A', 1),
+('份量少', 'price_perception', '#FFC107', 0);
+
+-- 插入等候與停車標籤
+INSERT OR IGNORE INTO tags (name, category, color, is_positive) VALUES
+('需要排隊', 'waiting', '#FF5722', 0),
+('免排隊', 'waiting', '#4CAF50', 1),
+('建議訂位', 'waiting', '#2196F3', 1),
+('停車方便', 'parking', '#4CAF50', 1),
+('停車困難', 'parking', '#F44336', 0);
+
+-- 插入用餐限制標籤
+INSERT OR IGNORE INTO tags (name, category, color, is_positive) VALUES
+('用餐限時', 'dining_rules', '#FF9800', 0),
+('有低消', 'dining_rules', '#FFC107', 0),
+('不限時', 'dining_rules', '#4CAF50', 1);
+
+-- 插入氛圍標籤
+INSERT OR IGNORE INTO tags (name, category, color, is_positive) VALUES
+('景觀優美', 'ambiance', '#00BCD4', 1),
+('網美打卡', 'ambiance', '#E91E63', 1),
+('復古風格', 'ambiance', '#795548', 1);

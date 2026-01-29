@@ -9,7 +9,7 @@
 - **菜系智慧分類**：從餐廳名稱、類型和評論中推斷菜系類型
 - **評論標籤提取**：自動從評論中提取環境、服務、衛生等標籤
 - **批量資料收集**：支援台北市 12 個行政區餐廳批量收集
-- **資料庫整合**：直接匯入 FeedNav-Serverless SQLite 資料庫
+- **資料庫整合**：直接匯入 FeedNav-Serverless D1/SQLite 資料庫
 
 ## 系統需求
 
@@ -33,6 +33,8 @@ cp .env.example .env
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 ```
 
+---
+
 ## 使用方式
 
 ### 步驟一：收集餐廳資料
@@ -45,14 +47,31 @@ python main.py
 
 ### 步驟二：整合到資料庫
 
+> **重要**：FeedNav-Serverless 使用 Cloudflare D1 資料庫。
+
 ```bash
-python integrate_data.py <json檔案路徑> <資料庫路徑>
+# 1. 整合到臨時 SQLite 檔案
+python integrate_data.py taipei_restaurants_20260128.json ./temp_import.db
 
-# 範例
-python integrate_data.py taipei_restaurants_20260128_143022.json ../feednav-serverless/database.db
+# 2. 匯出為 SQL
+sqlite3 ./temp_import.db .dump > import.sql
 
-# 安靜模式（減少輸出）
-python integrate_data.py taipei_restaurants_20260128.json ../feednav-serverless/database.db --quiet
+# 3. 匯入到遠端 D1（Preview 環境）
+cd ../feednav-serverless
+wrangler d1 execute feednav-db-preview --remote --file=../feednav-data-fetcher/import.sql
+
+# 或匯入到 Production 環境
+wrangler d1 execute feednav-db --remote --file=../feednav-data-fetcher/import.sql -e production
+
+# 4. 清理臨時檔案
+cd ../feednav-data-fetcher
+rm -f temp_import.db import.sql
+```
+
+#### 安靜模式
+
+```bash
+python integrate_data.py taipei_restaurants_20260128.json ./temp_import.db --quiet
 ```
 
 ### 一鍵執行（收集+整合）
@@ -60,6 +79,8 @@ python integrate_data.py taipei_restaurants_20260128.json ../feednav-serverless/
 ```bash
 ./batch_integration.sh
 ```
+
+---
 
 ## 專案結構
 
@@ -75,11 +96,20 @@ feednav-data-fetcher/
 ├── data_transformer.py      # 資料格式轉換器
 ├── database_inserter.py     # 資料庫插入器
 ├── requirements.txt         # 依賴套件
-├── .env.example             # 環境變數範例
-└── docs/
-    ├── integration-guide.md # 整合指南
-    └── api-examples.md      # API 範例
+└── .env.example             # 環境變數範例
 ```
+
+---
+
+## 資料流架構
+
+```
+FeedNav-DataFetcher → 資料處理 → FeedNav-Serverless Database
+      ↓                ↓                    ↓
+Google Places API → JSON 檔案 → Cloudflare D1 Database
+```
+
+---
 
 ## 核心模組
 
@@ -116,6 +146,73 @@ feednav-data-fetcher/
 - 自動去重（根據名稱+地址）
 - 自動建立標籤關聯
 - 提供資料完整性驗證
+
+---
+
+## 目標資料庫結構
+
+根據 `feednav-serverless/schema.sql`，主要資料表包括：
+
+### restaurants 表
+```sql
+CREATE TABLE restaurants (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  district TEXT,
+  cuisine_type TEXT,
+  rating REAL,
+  price_level INTEGER,
+  photos TEXT DEFAULT '[]',
+  address TEXT,
+  phone TEXT,
+  website TEXT,
+  opening_hours TEXT,
+  description TEXT,
+  latitude REAL,
+  longitude REAL,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+```
+
+### tags 表
+```sql
+CREATE TABLE tags (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  category TEXT,
+  color TEXT,
+  is_positive INTEGER DEFAULT 1
+);
+```
+
+### restaurant_tags 關聯表
+```sql
+CREATE TABLE restaurant_tags (
+  restaurant_id INTEGER REFERENCES restaurants(id),
+  tag_id INTEGER REFERENCES tags(id),
+  PRIMARY KEY (restaurant_id, tag_id)
+);
+```
+
+### 資料對應關係
+
+| DataFetcher 欄位 | Serverless 欄位 | 資料處理 |
+|------------------|-----------------|----------|
+| `name` | `name` | 直接對應 |
+| `district` | `district` | 直接對應 |
+| `cuisine_type` | `cuisine_type` | 直接對應 |
+| `rating` | `rating` | 直接對應 |
+| `price_level` | `price_level` | 直接對應 |
+| `formatted_address` | `address` | 直接對應 |
+| `geometry.location.lat` | `latitude` | 提取座標 |
+| `geometry.location.lng` | `longitude` | 提取座標 |
+| `photos` | `photos` | JSON 格式轉換 |
+| `opening_hours` | `opening_hours` | JSON 字串化 |
+| `tags` | `tags` → `restaurant_tags` | 複雜對應處理 |
+| `nearby_mrt` | - | 可作為描述或標籤 |
+
+---
 
 ## 輸出格式
 
@@ -154,6 +251,8 @@ feednav-data-fetcher/
 }
 ```
 
+---
+
 ## 配置調整
 
 各模組的配置常數位於檔案頂部，可依需求調整：
@@ -183,12 +282,84 @@ TRANSFORMER_CONFIG = {
 }
 ```
 
-## API 使用限制
+---
 
-- Google Places API 有每日查詢限制
-- 程式內建速率限制（0.1 秒/請求）
-- 翻頁需等待 2 秒（Google API 要求）
-- 詳細配額資訊請參考 [Google Cloud Console](https://console.cloud.google.com/)
+## 進階整合
+
+### 直接 API 上傳
+
+若 FeedNav-Serverless 提供管理 API，可使用以下方式直接上傳：
+
+```python
+import requests
+import json
+
+def upload_restaurant(api_url: str, api_key: str, restaurant_data: dict):
+    """透過 API 上傳餐廳資料"""
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.post(
+        f"{api_url}/api/admin/restaurants",
+        headers=headers,
+        json=restaurant_data
+    )
+
+    return response.json()
+```
+
+### 批次處理腳本
+
+`batch_integration.sh` 腳本流程：
+
+```bash
+#!/bin/bash
+
+DATAFETCHER_DIR="$(cd "$(dirname "$0")" && pwd)"
+SERVERLESS_DIR="$DATAFETCHER_DIR/../feednav-serverless"
+
+cd "$DATAFETCHER_DIR"
+
+echo "開始資料收集..."
+python main.py
+
+# 找到最新的 JSON 檔案
+LATEST_JSON=$(ls -t taipei_restaurants_*.json 2>/dev/null | head -n1)
+
+if [ -n "$LATEST_JSON" ]; then
+    echo "找到最新資料檔案：$LATEST_JSON"
+
+    # 整合到臨時 SQLite
+    python integrate_data.py "$LATEST_JSON" ./temp_import.db
+
+    # 匯出 SQL
+    sqlite3 ./temp_import.db .dump > import.sql
+
+    # 匯入到遠端 D1 Preview
+    cd "$SERVERLESS_DIR"
+    wrangler d1 execute feednav-db-preview --remote --file="$DATAFETCHER_DIR/import.sql"
+
+    # 清理
+    cd "$DATAFETCHER_DIR"
+    rm -f temp_import.db import.sql
+
+    echo "完成！"
+else
+    echo "錯誤：找不到資料檔案"
+    exit 1
+fi
+```
+
+### 定期更新（Cron Job）
+
+```bash
+# 每週日凌晨 2 點更新
+0 2 * * 0 /path/to/feednav-data-fetcher/batch_integration.sh
+```
+
+---
 
 ## 資料品質
 
@@ -198,6 +369,8 @@ TRANSFORMER_CONFIG = {
 | 標籤提取門檻 | 信心度 ≥ 0.3 |
 | 地理位置匹配 | 支援地址解析和座標反查 |
 | 捷運站匹配 | 500 公尺內 |
+
+---
 
 ## 常見問題
 
@@ -219,7 +392,45 @@ TRANSFORMER_CONFIG = {
 解決：調整 TAG_CONFIDENCE_THRESHOLD 為較低值（如 0.3）
 ```
 
-## 相關文件
+### 記憶體不足
+```
+原因：一次載入太多餐廳資料
+解決：分批處理大量資料，或使用 --quiet 參數減少輸出
+```
 
-- [整合指南](docs/integration-guide.md) - 完整的資料庫整合說明
-- [API 範例](docs/api-examples.md) - Google Places API 使用範例
+---
+
+## API 使用限制
+
+- Google Places API 有每日查詢限制
+- 程式內建速率限制（0.1 秒/請求）
+- 翻頁需等待 2 秒（Google API 要求）
+- 詳細配額資訊請參考 [Google Cloud Console](https://console.cloud.google.com/)
+
+---
+
+## 環境變數設定
+
+### .env 範例
+
+```bash
+# Google Maps API
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+
+# FeedNav API（可選，用於直接 API 上傳）
+FEEDNAV_API_URL=https://api.feednav.cc
+FEEDNAV_API_KEY=your_api_key_if_needed
+
+# Webhook 通知（可選）
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+```
+
+---
+
+## 相關連結
+
+- [FeedNav-Serverless 專案](../feednav-serverless/)
+- [Google Places API 文檔](https://developers.google.com/maps/documentation/places/web-service)
+- [Cloudflare D1 文檔](https://developers.cloudflare.com/d1/)
+- [Wrangler CLI 文檔](https://developers.cloudflare.com/workers/wrangler/)

@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from review_tag_extractor import VisitDurationExtractor
+
 # 配置常數
 TRANSFORMER_CONFIG = {
     'MAX_PHOTOS': 5,                         # 最多儲存的照片數量
@@ -23,6 +25,7 @@ class DataTransformer:
     def __init__(self) -> None:
         """初始化資料轉換器"""
         self.tag_mapping = self._load_tag_mapping()
+        self.duration_extractor = VisitDurationExtractor()
 
     def _load_tag_mapping(self) -> dict[str, dict[str, str]]:
         """載入標籤對應表"""
@@ -57,6 +60,54 @@ class DataTransformer:
                 'non_smoking': '禁菸環境',
                 'good_ventilation': '通風良好',
                 'poor_ventilation': '通風不佳'
+            },
+            'price_perception': {
+                'cp_value_high': 'CP值高',
+                'expensive': '價格偏貴',
+                'large_portion': '份量大',
+                'small_portion': '份量少'
+            },
+            'waiting': {
+                'need_queue': '需要排隊',
+                'no_wait': '免排隊',
+                'reservation_recommended': '建議訂位'
+            },
+            'parking': {
+                'parking_easy': '停車方便',
+                'parking_difficult': '停車困難'
+            },
+            'dining_rules': {
+                'time_limit': '用餐限時',
+                'minimum_charge': '有低消',
+                'no_time_limit': '不限時'
+            },
+            'occasion': {
+                'solo_friendly': '適合獨食',
+                'group_friendly': '適合聚餐',
+                'business_friendly': '適合商務'
+            },
+            'accessibility': {
+                'wheelchair_accessible': '無障礙設施',
+                'baby_chair': '有兒童座椅'
+            },
+            'ambiance': {
+                'good_view': '景觀優美',
+                'instagrammable': '網美打卡',
+                'vintage_style': '復古風格'
+            },
+            'scenario': {
+                'diet_friendly': '飲控友善',
+                'work_friendly': '適合工作',
+                'date_friendly': '約會適合'
+            },
+            'facility': {
+                'has_private_room': '有包廂',
+                'has_counter': '有吧台',
+                'has_power_outlet': '有插座',
+                'has_wifi': '有Wi-Fi',
+                'has_outdoor_seating': '有戶外座位',
+                'has_projector': '有投影設備',
+                'has_reservation': '可訂位'
             }
         }
     
@@ -75,6 +126,7 @@ class DataTransformer:
         restaurant: dict[str, Any] = {
             'name': fetcher_data.get('name'),
             'district': fetcher_data.get('district'),
+            'category': fetcher_data.get('category', '餐廳'),
             'cuisine_type': fetcher_data.get('cuisine_type'),
             'rating': fetcher_data.get('rating'),
             'price_level': fetcher_data.get('price_level'),
@@ -90,10 +142,20 @@ class DataTransformer:
             'description': self._generate_description(fetcher_data)
         }
 
-        restaurant['processed_tags'] = self._process_tags(
-            fetcher_data.get('tags', {})
-        )
+        tags_data = fetcher_data.get('tags', {})
+        restaurant['processed_tags'] = self._process_tags(tags_data)
+        restaurant['scenario_tags'] = self._extract_scenario_tags(tags_data)
         restaurant['mrt_info'] = fetcher_data.get('nearby_mrt', [])
+
+        # 提取設施資訊
+        facility_info = self._extract_facility_info(tags_data)
+        restaurant['has_wifi'] = facility_info['has_wifi']
+        restaurant['has_power_outlet'] = facility_info['has_power_outlet']
+        restaurant['seat_type'] = facility_info['seat_type']
+
+        # 提取平均用餐時間
+        reviews = fetcher_data.get('reviews', [])
+        restaurant['avg_visit_duration'] = self.duration_extractor.extract_duration(reviews)
 
         return restaurant
 
@@ -202,6 +264,91 @@ class DataTransformer:
         """
         return self.tag_mapping.get(category, {}).get(tag_type, '')
 
+    def _extract_scenario_tags(
+        self, tags_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """
+        提取情境標籤
+
+        從標籤資料中提取情境相關標籤 (scenario, occasion 類別)。
+
+        Args:
+            tags_data: 原始標籤資料
+
+        Returns:
+            情境標籤列表
+        """
+        scenario_tags: list[dict[str, Any]] = []
+        threshold = TRANSFORMER_CONFIG['TAG_CONFIDENCE_THRESHOLD']
+
+        # 情境相關的類別
+        scenario_categories = {'scenario', 'occasion'}
+
+        for category, tags in tags_data.items():
+            if category not in scenario_categories:
+                continue
+
+            if not isinstance(tags, dict):
+                continue
+
+            for tag_type, tag_info in tags.items():
+                if not isinstance(tag_info, dict):
+                    continue
+
+                if tag_info.get('confidence', 0) >= threshold:
+                    tag_name = self._get_tag_name(category, tag_type)
+                    if tag_name:
+                        scenario_tags.append({
+                            'name': tag_name,
+                            'type': tag_type,
+                            'confidence': tag_info['confidence']
+                        })
+
+        return scenario_tags
+
+    def _extract_facility_info(
+        self, tags_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        提取設施資訊
+
+        從標籤資料中提取 Wi-Fi、插座、座位類型等設施資訊。
+
+        Args:
+            tags_data: 原始標籤資料
+
+        Returns:
+            設施資訊字典
+        """
+        threshold = TRANSFORMER_CONFIG['TAG_CONFIDENCE_THRESHOLD']
+        facility_tags = tags_data.get('facility', {})
+
+        has_wifi = None
+        has_power_outlet = None
+        seat_types: list[str] = []
+
+        if isinstance(facility_tags, dict):
+            # Wi-Fi 和插座
+            if facility_tags.get('has_wifi', {}).get('confidence', 0) >= threshold:
+                has_wifi = 1
+            if facility_tags.get('has_power_outlet', {}).get('confidence', 0) >= threshold:
+                has_power_outlet = 1
+
+            # 座位類型
+            seat_type_map = {
+                'has_counter': '吧台',
+                'has_private_room': '包廂',
+            }
+            for key, seat_name in seat_type_map.items():
+                if facility_tags.get(key, {}).get('confidence', 0) >= threshold:
+                    seat_types.append(seat_name)
+
+        return {
+            'has_wifi': has_wifi,
+            'has_power_outlet': has_power_outlet,
+            'seat_type': seat_types
+        }
+
     def _is_positive_tag(self, tag_type: str) -> bool:
         """
         判斷標籤是否為正面標籤
@@ -215,7 +362,16 @@ class DataTransformer:
         positive_tags = {
             'electronic_payment', 'multiple_payment', 'quiet', 'romantic',
             'family_friendly', 'clean', 'good_service', 'fast_service',
-            'pet_friendly', 'non_smoking', 'good_ventilation'
+            'pet_friendly', 'non_smoking', 'good_ventilation',
+            # 價格、等候、停車、用餐限制
+            'cp_value_high', 'large_portion', 'no_wait', 'parking_easy',
+            'no_time_limit', 'solo_friendly', 'group_friendly', 'business_friendly',
+            'wheelchair_accessible', 'baby_chair', 'good_view', 'instagrammable',
+            'vintage_style',
+            # 情境與設施標籤
+            'diet_friendly', 'work_friendly', 'date_friendly',
+            'has_private_room', 'has_counter', 'has_power_outlet', 'has_wifi',
+            'has_outdoor_seating', 'has_projector', 'has_reservation'
         }
         return tag_type in positive_tags
 

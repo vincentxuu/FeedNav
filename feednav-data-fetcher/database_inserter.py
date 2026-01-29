@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import json
 import logging
 import sqlite3
 from datetime import datetime
@@ -14,15 +15,24 @@ logger = logging.getLogger(__name__)
 
 # 標籤顏色對應表
 TAG_COLOR_MAPPING: dict[str, str] = {
-    'payment': 'orange',
-    'environment': 'teal',
-    'hygiene': 'blue',
-    'service': 'purple',
-    'pet_policy': 'green',
-    'air_quality': 'gray'
+    'payment': '#FF9800',
+    'environment': '#00BCD4',
+    'hygiene': '#2196F3',
+    'service': '#9C27B0',
+    'pet_policy': '#4CAF50',
+    'air_quality': '#607D8B',
+    'price_perception': '#8BC34A',
+    'waiting': '#FF5722',
+    'parking': '#795548',
+    'dining_rules': '#FFC107',
+    'occasion': '#FF6B6B',
+    'accessibility': '#2196F3',
+    'ambiance': '#E91E63',
+    'scenario': '#4ECDC4',
+    'facility': '#FFD93D',
 }
 
-DEFAULT_TAG_COLOR = 'gray'
+DEFAULT_TAG_COLOR = '#9E9E9E'
 
 
 class DatabaseInserter:
@@ -75,17 +85,22 @@ class DatabaseInserter:
         # 插入新餐廳
         query = """
         INSERT INTO restaurants (
-            name, district, cuisine_type, rating, price_level,
+            name, district, category, cuisine_type, rating, price_level,
             photos, address, phone, website, opening_hours,
-            description, latitude, longitude, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            description, latitude, longitude, scenario_tags,
+            has_wifi, has_power_outlet, seat_type, avg_visit_duration,
+            created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-        
+
         now = datetime.now().isoformat()
-        
+        scenario_tags = self._serialize_scenario_tags(restaurant_data.get('scenario_tags', []))
+        seat_type = self._serialize_seat_type(restaurant_data.get('seat_type', []))
+
         self.cursor.execute(query, (
             restaurant_data['name'],
             restaurant_data['district'],
+            restaurant_data.get('category', '餐廳'),
             restaurant_data['cuisine_type'],
             restaurant_data['rating'],
             restaurant_data['price_level'],
@@ -97,6 +112,11 @@ class DatabaseInserter:
             restaurant_data['description'],
             restaurant_data['latitude'],
             restaurant_data['longitude'],
+            scenario_tags,
+            restaurant_data.get('has_wifi'),
+            restaurant_data.get('has_power_outlet'),
+            seat_type,
+            restaurant_data.get('avg_visit_duration'),
             now,
             now
         ))
@@ -128,16 +148,21 @@ class DatabaseInserter:
 
         query = """
         UPDATE restaurants SET
-            district = ?, cuisine_type = ?, rating = ?, price_level = ?,
+            district = ?, category = ?, cuisine_type = ?, rating = ?, price_level = ?,
             photos = ?, phone = ?, website = ?, opening_hours = ?,
-            description = ?, latitude = ?, longitude = ?, updated_at = ?
+            description = ?, latitude = ?, longitude = ?, scenario_tags = ?,
+            has_wifi = ?, has_power_outlet = ?, seat_type = ?, avg_visit_duration = ?,
+            updated_at = ?
         WHERE id = ?
         """
-        
+
         now = datetime.now().isoformat()
-        
+        scenario_tags = self._serialize_scenario_tags(restaurant_data.get('scenario_tags', []))
+        seat_type = self._serialize_seat_type(restaurant_data.get('seat_type', []))
+
         self.cursor.execute(query, (
             restaurant_data['district'],
+            restaurant_data.get('category', '餐廳'),
             restaurant_data['cuisine_type'],
             restaurant_data['rating'],
             restaurant_data['price_level'],
@@ -148,6 +173,11 @@ class DatabaseInserter:
             restaurant_data['description'],
             restaurant_data['latitude'],
             restaurant_data['longitude'],
+            scenario_tags,
+            restaurant_data.get('has_wifi'),
+            restaurant_data.get('has_power_outlet'),
+            seat_type,
+            restaurant_data.get('avg_visit_duration'),
             now,
             restaurant_id
         ))
@@ -219,6 +249,43 @@ class DatabaseInserter:
 
         return self.cursor.lastrowid or 0
 
+    def _serialize_scenario_tags(self, scenario_tags: list[dict[str, Any]]) -> str:
+        """
+        序列化情境標籤為 JSON 字串
+
+        Args:
+            scenario_tags: 情境標籤列表
+
+        Returns:
+            JSON 格式字串
+        """
+        if not scenario_tags:
+            return '[]'
+
+        # 只保留必要欄位
+        simplified = [
+            {'name': tag.get('name', ''), 'type': tag.get('type', '')}
+            for tag in scenario_tags
+            if tag.get('name')
+        ]
+
+        return json.dumps(simplified, ensure_ascii=False)
+
+    def _serialize_seat_type(self, seat_type: list[str]) -> str:
+        """
+        序列化座位類型為 JSON 字串
+
+        Args:
+            seat_type: 座位類型列表
+
+        Returns:
+            JSON 格式字串
+        """
+        if not seat_type:
+            return '[]'
+
+        return json.dumps(seat_type, ensure_ascii=False)
+
     def get_statistics(self) -> dict[str, Any]:
         """
         獲取資料庫統計資訊
@@ -268,6 +335,27 @@ class DatabaseInserter:
         stats['cuisine_distribution'] = {
             row['cuisine_type']: row['count'] for row in cuisine_counts
         }
+
+        # 各主分類數量
+        category_counts = self.cursor.execute(
+            """SELECT category, COUNT(*) as count FROM restaurants
+               WHERE category IS NOT NULL
+               GROUP BY category ORDER BY count DESC"""
+        ).fetchall()
+        stats['category_distribution'] = {
+            row['category']: row['count'] for row in category_counts
+        }
+
+        # 設施統計
+        wifi_count = self.cursor.execute(
+            "SELECT COUNT(*) as count FROM restaurants WHERE has_wifi = 1"
+        ).fetchone()
+        stats['has_wifi_count'] = wifi_count['count']
+
+        outlet_count = self.cursor.execute(
+            "SELECT COUNT(*) as count FROM restaurants WHERE has_power_outlet = 1"
+        ).fetchone()
+        stats['has_power_outlet_count'] = outlet_count['count']
 
         return stats
 
