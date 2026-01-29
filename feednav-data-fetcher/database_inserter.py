@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import json
 import logging
 import sqlite3
 from datetime import datetime
@@ -258,8 +259,6 @@ class DatabaseInserter:
         Returns:
             JSON 格式字串
         """
-        import json
-
         if not scenario_tags:
             return '[]'
 
@@ -282,8 +281,6 @@ class DatabaseInserter:
         Returns:
             JSON 格式字串
         """
-        import json
-
         if not seat_type:
             return '[]'
 

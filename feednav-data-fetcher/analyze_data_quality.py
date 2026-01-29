@@ -38,55 +38,47 @@ class DataQualityAnalyzer:
         Returns:
             分析結果字典
         """
+        overview = self._analyze_overview()
+        quality_metrics = self._calculate_quality_metrics(overview)
+
         return {
-            'overview': self._analyze_overview(),
+            'overview': overview,
             'category_distribution': self._analyze_category_distribution(),
             'scenario_tags': self._analyze_scenario_tags(),
             'facility_coverage': self._analyze_facility_coverage(),
             'tag_distribution': self._analyze_tag_distribution(),
-            'quality_metrics': self._calculate_quality_metrics(),
-            'issues': self._identify_issues(),
+            'quality_metrics': quality_metrics,
+            'issues': self._identify_issues(overview, quality_metrics),
         }
 
     def _analyze_overview(self) -> dict[str, int]:
         """分析概覽統計"""
         cursor = self.conn.cursor()
 
-        total = cursor.execute(
-            "SELECT COUNT(*) FROM restaurants"
-        ).fetchone()[0]
+        # 合併多個計數查詢為單一查詢以提高效能
+        row = cursor.execute(
+            """SELECT
+                COUNT(*) as total_restaurants,
+                COUNT(CASE WHEN scenario_tags IS NOT NULL
+                    AND scenario_tags != '[]' THEN 1 END) as with_scenario_tags,
+                COUNT(CASE WHEN has_wifi = 1 THEN 1 END) as with_wifi,
+                COUNT(CASE WHEN has_power_outlet = 1 THEN 1 END) as with_power_outlet,
+                COUNT(CASE WHEN avg_visit_duration IS NOT NULL THEN 1 END) as with_visit_duration
+            FROM restaurants"""
+        ).fetchone()
 
+        # 標籤關聯需要單獨查詢
         with_tags = cursor.execute(
-            """SELECT COUNT(DISTINCT restaurant_id)
-               FROM restaurant_tags"""
-        ).fetchone()[0]
-
-        with_scenario = cursor.execute(
-            """SELECT COUNT(*) FROM restaurants
-               WHERE scenario_tags IS NOT NULL
-               AND scenario_tags != '[]'"""
-        ).fetchone()[0]
-
-        with_wifi = cursor.execute(
-            "SELECT COUNT(*) FROM restaurants WHERE has_wifi = 1"
-        ).fetchone()[0]
-
-        with_outlet = cursor.execute(
-            "SELECT COUNT(*) FROM restaurants WHERE has_power_outlet = 1"
-        ).fetchone()[0]
-
-        with_duration = cursor.execute(
-            """SELECT COUNT(*) FROM restaurants
-               WHERE avg_visit_duration IS NOT NULL"""
+            "SELECT COUNT(DISTINCT restaurant_id) FROM restaurant_tags"
         ).fetchone()[0]
 
         return {
-            'total_restaurants': total,
+            'total_restaurants': row['total_restaurants'],
             'with_tags': with_tags,
-            'with_scenario_tags': with_scenario,
-            'with_wifi': with_wifi,
-            'with_power_outlet': with_outlet,
-            'with_visit_duration': with_duration,
+            'with_scenario_tags': row['with_scenario_tags'],
+            'with_wifi': row['with_wifi'],
+            'with_power_outlet': row['with_power_outlet'],
+            'with_visit_duration': row['with_visit_duration'],
         }
 
     def _analyze_category_distribution(self) -> dict[str, int]:
@@ -216,13 +208,17 @@ class DataQualityAnalyzer:
             ],
         }
 
-    def _calculate_quality_metrics(self) -> dict[str, float]:
-        """計算資料品質指標"""
-        cursor = self.conn.cursor()
+    def _calculate_quality_metrics(
+        self, overview: dict[str, int]
+    ) -> dict[str, float]:
+        """
+        計算資料品質指標
 
-        total = cursor.execute(
-            "SELECT COUNT(*) FROM restaurants"
-        ).fetchone()[0]
+        Args:
+            overview: 概覽統計數據（來自 _analyze_overview）
+        """
+        cursor = self.conn.cursor()
+        total = overview['total_restaurants']
 
         if total == 0:
             return {
@@ -232,26 +228,18 @@ class DataQualityAnalyzer:
                 'facility_coverage': 0.0,
             }
 
-        # 標籤覆蓋率
-        with_tags = cursor.execute(
-            "SELECT COUNT(DISTINCT restaurant_id) FROM restaurant_tags"
-        ).fetchone()[0]
+        # 使用 overview 中的數據
+        with_tags = overview['with_tags']
+        with_scenario = overview['with_scenario_tags']
 
-        # 情境標籤覆蓋率
-        with_scenario = cursor.execute(
-            """SELECT COUNT(*) FROM restaurants
-               WHERE scenario_tags IS NOT NULL
-               AND scenario_tags != '[]'"""
-        ).fetchone()[0]
-
-        # 主分類覆蓋率（非預設值的比例）
+        # 主分類覆蓋率（需要單獨查詢）
         with_category = cursor.execute(
             """SELECT COUNT(*) FROM restaurants
                WHERE category IS NOT NULL
                AND category != ''"""
         ).fetchone()[0]
 
-        # 設施資訊覆蓋率
+        # 設施資訊覆蓋率（需要單獨查詢）
         with_facility = cursor.execute(
             """SELECT COUNT(*) FROM restaurants
                WHERE has_wifi IS NOT NULL
@@ -266,8 +254,18 @@ class DataQualityAnalyzer:
             'facility_coverage': round(with_facility / total * 100, 1),
         }
 
-    def _identify_issues(self) -> list[str]:
-        """識別資料問題"""
+    def _identify_issues(
+        self,
+        overview: dict[str, int],
+        quality_metrics: dict[str, float]
+    ) -> list[str]:
+        """
+        識別資料問題
+
+        Args:
+            overview: 概覽統計數據
+            quality_metrics: 品質指標數據
+        """
         cursor = self.conn.cursor()
         issues: list[str] = []
 
@@ -288,25 +286,15 @@ class DataQualityAnalyzer:
             issues.append(f"{missing_address} 間餐廳缺少地址資訊")
 
         # 沒有任何標籤的餐廳
-        no_tags = cursor.execute(
-            """SELECT COUNT(*) FROM restaurants r
-               LEFT JOIN restaurant_tags rt ON r.id = rt.restaurant_id
-               WHERE rt.restaurant_id IS NULL"""
-        ).fetchone()[0]
+        no_tags = overview['total_restaurants'] - overview['with_tags']
         if no_tags > 0:
             issues.append(f"{no_tags} 間餐廳沒有任何標籤")
 
-        # 檢查情境標籤覆蓋率是否達標
-        total = cursor.execute("SELECT COUNT(*) FROM restaurants").fetchone()[0]
-        with_scenario = cursor.execute(
-            """SELECT COUNT(*) FROM restaurants
-               WHERE scenario_tags IS NOT NULL
-               AND scenario_tags != '[]'"""
-        ).fetchone()[0]
-
-        if total > 0 and (with_scenario / total) < 0.5:
-            coverage = round(with_scenario / total * 100, 1)
-            issues.append(f"情境標籤覆蓋率僅 {coverage}%，未達 50% 目標")
+        # 檢查情境標籤覆蓋率是否達標（使用已計算的指標）
+        if quality_metrics['scenario_coverage'] < 50:
+            issues.append(
+                f"情境標籤覆蓋率僅 {quality_metrics['scenario_coverage']}%，未達 50% 目標"
+            )
 
         return issues
 

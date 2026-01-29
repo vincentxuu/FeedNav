@@ -323,29 +323,25 @@ class DataTransformer:
         threshold = TRANSFORMER_CONFIG['TAG_CONFIDENCE_THRESHOLD']
         facility_tags = tags_data.get('facility', {})
 
-        # 提取 Wi-Fi 和插座資訊
         has_wifi = None
         has_power_outlet = None
         seat_types: list[str] = []
 
         if isinstance(facility_tags, dict):
-            # Wi-Fi
-            wifi_info = facility_tags.get('has_wifi', {})
-            if isinstance(wifi_info, dict):
-                if wifi_info.get('confidence', 0) >= threshold:
-                    has_wifi = 1
-
-            # 插座
-            outlet_info = facility_tags.get('has_power_outlet', {})
-            if isinstance(outlet_info, dict):
-                if outlet_info.get('confidence', 0) >= threshold:
-                    has_power_outlet = 1
+            # Wi-Fi 和插座
+            if facility_tags.get('has_wifi', {}).get('confidence', 0) >= threshold:
+                has_wifi = 1
+            if facility_tags.get('has_power_outlet', {}).get('confidence', 0) >= threshold:
+                has_power_outlet = 1
 
             # 座位類型
-            if facility_tags.get('has_counter', {}).get('confidence', 0) >= threshold:
-                seat_types.append('吧台')
-            if facility_tags.get('has_private_room', {}).get('confidence', 0) >= threshold:
-                seat_types.append('包廂')
+            seat_type_map = {
+                'has_counter': '吧台',
+                'has_private_room': '包廂',
+            }
+            for key, seat_name in seat_type_map.items():
+                if facility_tags.get(key, {}).get('confidence', 0) >= threshold:
+                    seat_types.append(seat_name)
 
         return {
             'has_wifi': has_wifi,
