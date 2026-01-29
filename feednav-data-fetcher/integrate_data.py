@@ -128,6 +128,11 @@ def _print_summary(
         for district, count in list(stats['district_distribution'].items())[:5]:
             print(f"  {district}: {count} 間")
 
+    if stats.get('category_distribution'):
+        print(f"\n主分類分佈：")
+        for category, count in stats['category_distribution'].items():
+            print(f"  {category}: {count} 間")
+
     if stats['cuisine_distribution']:
         print(f"\n菜系分佈（前5名）：")
         for cuisine, count in list(stats['cuisine_distribution'].items())[:5]:
@@ -150,9 +155,11 @@ def main() -> int:
     """
     if len(sys.argv) < 3:
         print("使用方式: python integrate_data.py <json_file_path> <database_path> [--quiet]")
-        print("範例: python integrate_data.py taipei_restaurants_20231201.json ../FeedNav-Serverless/database.db")
+        print("範例: python integrate_data.py taipei_restaurants_20260128.json ./temp_import.db")
         print("參數:")
         print("  --quiet  安靜模式，減少輸出訊息")
+        print("")
+        print("提示: 整合到遠端 D1 資料庫請參考 README.md")
         return 1
 
     json_file_path = sys.argv[1]
