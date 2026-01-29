@@ -141,6 +141,12 @@ class DataTransformer:
         restaurant['scenario_tags'] = self._extract_scenario_tags(tags_data)
         restaurant['mrt_info'] = fetcher_data.get('nearby_mrt', [])
 
+        # 提取設施資訊
+        facility_info = self._extract_facility_info(tags_data)
+        restaurant['has_wifi'] = facility_info['has_wifi']
+        restaurant['has_power_outlet'] = facility_info['has_power_outlet']
+        restaurant['seat_type'] = facility_info['seat_type']
+
         return restaurant
 
     def _extract_latitude(self, fetcher_data: dict[str, Any]) -> float | None:
@@ -289,6 +295,53 @@ class DataTransformer:
                         })
 
         return scenario_tags
+
+    def _extract_facility_info(
+        self, tags_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        提取設施資訊
+
+        從標籤資料中提取 Wi-Fi、插座、座位類型等設施資訊。
+
+        Args:
+            tags_data: 原始標籤資料
+
+        Returns:
+            設施資訊字典
+        """
+        threshold = TRANSFORMER_CONFIG['TAG_CONFIDENCE_THRESHOLD']
+        facility_tags = tags_data.get('facility', {})
+
+        # 提取 Wi-Fi 和插座資訊
+        has_wifi = None
+        has_power_outlet = None
+        seat_types: list[str] = []
+
+        if isinstance(facility_tags, dict):
+            # Wi-Fi
+            wifi_info = facility_tags.get('has_wifi', {})
+            if isinstance(wifi_info, dict):
+                if wifi_info.get('confidence', 0) >= threshold:
+                    has_wifi = 1
+
+            # 插座
+            outlet_info = facility_tags.get('has_power_outlet', {})
+            if isinstance(outlet_info, dict):
+                if outlet_info.get('confidence', 0) >= threshold:
+                    has_power_outlet = 1
+
+            # 座位類型
+            if facility_tags.get('has_counter', {}).get('confidence', 0) >= threshold:
+                seat_types.append('吧台')
+            if facility_tags.get('has_private_room', {}).get('confidence', 0) >= threshold:
+                seat_types.append('包廂')
+
+        return {
+            'has_wifi': has_wifi,
+            'has_power_outlet': has_power_outlet,
+            'seat_type': seat_types
+        }
 
     def _is_positive_tag(self, tag_type: str) -> bool:
         """

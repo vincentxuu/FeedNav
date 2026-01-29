@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS restaurants (
   latitude REAL,
   longitude REAL,
   scenario_tags TEXT DEFAULT '[]',
+  has_wifi INTEGER,
+  has_power_outlet INTEGER,
+  seat_type TEXT DEFAULT '[]',
+  avg_visit_duration INTEGER,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );

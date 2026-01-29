@@ -87,12 +87,14 @@ class DatabaseInserter:
             name, district, category, cuisine_type, rating, price_level,
             photos, address, phone, website, opening_hours,
             description, latitude, longitude, scenario_tags,
+            has_wifi, has_power_outlet, seat_type,
             created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         now = datetime.now().isoformat()
         scenario_tags = self._serialize_scenario_tags(restaurant_data.get('scenario_tags', []))
+        seat_type = self._serialize_seat_type(restaurant_data.get('seat_type', []))
 
         self.cursor.execute(query, (
             restaurant_data['name'],
@@ -110,6 +112,9 @@ class DatabaseInserter:
             restaurant_data['latitude'],
             restaurant_data['longitude'],
             scenario_tags,
+            restaurant_data.get('has_wifi'),
+            restaurant_data.get('has_power_outlet'),
+            seat_type,
             now,
             now
         ))
@@ -144,12 +149,14 @@ class DatabaseInserter:
             district = ?, category = ?, cuisine_type = ?, rating = ?, price_level = ?,
             photos = ?, phone = ?, website = ?, opening_hours = ?,
             description = ?, latitude = ?, longitude = ?, scenario_tags = ?,
+            has_wifi = ?, has_power_outlet = ?, seat_type = ?,
             updated_at = ?
         WHERE id = ?
         """
 
         now = datetime.now().isoformat()
         scenario_tags = self._serialize_scenario_tags(restaurant_data.get('scenario_tags', []))
+        seat_type = self._serialize_seat_type(restaurant_data.get('seat_type', []))
 
         self.cursor.execute(query, (
             restaurant_data['district'],
@@ -165,6 +172,9 @@ class DatabaseInserter:
             restaurant_data['latitude'],
             restaurant_data['longitude'],
             scenario_tags,
+            restaurant_data.get('has_wifi'),
+            restaurant_data.get('has_power_outlet'),
+            seat_type,
             now,
             restaurant_id
         ))
@@ -260,6 +270,23 @@ class DatabaseInserter:
 
         return json.dumps(simplified, ensure_ascii=False)
 
+    def _serialize_seat_type(self, seat_type: list[str]) -> str:
+        """
+        序列化座位類型為 JSON 字串
+
+        Args:
+            seat_type: 座位類型列表
+
+        Returns:
+            JSON 格式字串
+        """
+        import json
+
+        if not seat_type:
+            return '[]'
+
+        return json.dumps(seat_type, ensure_ascii=False)
+
     def get_statistics(self) -> dict[str, Any]:
         """
         獲取資料庫統計資訊
@@ -319,6 +346,17 @@ class DatabaseInserter:
         stats['category_distribution'] = {
             row['category']: row['count'] for row in category_counts
         }
+
+        # 設施統計
+        wifi_count = self.cursor.execute(
+            "SELECT COUNT(*) as count FROM restaurants WHERE has_wifi = 1"
+        ).fetchone()
+        stats['has_wifi_count'] = wifi_count['count']
+
+        outlet_count = self.cursor.execute(
+            "SELECT COUNT(*) as count FROM restaurants WHERE has_power_outlet = 1"
+        ).fetchone()
+        stats['has_power_outlet_count'] = outlet_count['count']
 
         return stats
 
