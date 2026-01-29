@@ -10,6 +10,7 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - '.npmrc'
       - '.github/workflows/deploy-fe.yml'
   pull_request:
     branches:
