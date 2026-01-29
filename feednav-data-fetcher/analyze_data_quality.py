@@ -388,6 +388,17 @@ class DataQualityAnalyzer:
             self.conn.close()
             self.conn = None
 
+    def __enter__(self) -> 'DataQualityAnalyzer':
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any
+    ) -> None:
+        self.close()
+
 
 def main() -> int:
     """
