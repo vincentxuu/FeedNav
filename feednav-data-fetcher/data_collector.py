@@ -119,6 +119,8 @@ class DataCollectionPipeline:
 
             return complete_data
 
+        except QuotaExceededError:
+            raise
         except (ApiError, TransportError) as e:
             logger.error(f"Google API 錯誤 (place_id: {place_id}): {type(e).__name__}")
             return None
@@ -167,6 +169,7 @@ class DataCollectionPipeline:
             # 處理分頁 (Google API 要求延遲)
             while 'next_page_token' in places_result:
                 time.sleep(API_CONFIG['NEXT_PAGE_DELAY_SECONDS'])
+                self.quota_tracker.check_and_increment(APIQuotaTracker.NEARBY_SEARCH)
                 places_result = self.gmaps.places_nearby(
                     page_token=places_result['next_page_token']
                 )
@@ -174,6 +177,8 @@ class DataCollectionPipeline:
 
             return restaurants
 
+        except QuotaExceededError:
+            raise
         except (ApiError, TransportError) as e:
             logger.error(f"搜尋餐廳失敗 ({district}, {place_type}): {type(e).__name__}")
             return []
@@ -196,6 +201,7 @@ class DataCollectionPipeline:
             店家基本資訊列表 (place_id, name, district)
         """
         try:
+            self.quota_tracker.check_and_increment(APIQuotaTracker.TEXT_SEARCH)
             query = f"{keyword} {district} 台北市"
             places_result = self.gmaps.places(
                 query=query,
@@ -220,6 +226,7 @@ class DataCollectionPipeline:
             # 處理分頁
             while 'next_page_token' in places_result:
                 time.sleep(API_CONFIG['NEXT_PAGE_DELAY_SECONDS'])
+                self.quota_tracker.check_and_increment(APIQuotaTracker.TEXT_SEARCH)
                 places_result = self.gmaps.places(
                     page_token=places_result['next_page_token']
                 )
@@ -227,6 +234,8 @@ class DataCollectionPipeline:
 
             return restaurants
 
+        except QuotaExceededError:
+            raise
         except (ApiError, TransportError) as e:
             logger.error(f"關鍵字搜尋失敗 ({keyword}, {district}): {type(e).__name__}")
             return []
@@ -272,36 +281,43 @@ class DataCollectionPipeline:
             search_types = ['restaurant']
 
         taipei_restaurants: list[dict[str, str]] = []
+        quota_exceeded = False
 
         # 搜尋各行政區
-        for district in TAIPEI_DISTRICTS:
-            for search_type in search_types:
-                if search_type not in SEARCH_TYPES:
-                    logger.warning(f"未知的搜尋類型: {search_type}")
-                    continue
+        try:
+            for district in TAIPEI_DISTRICTS:
+                if quota_exceeded:
+                    break
+                for search_type in search_types:
+                    if search_type not in SEARCH_TYPES:
+                        logger.warning(f"未知的搜尋類型: {search_type}")
+                        continue
 
-                config = SEARCH_TYPES[search_type]
-                place_type = config['type']
-                keywords = config['keywords']
+                    config = SEARCH_TYPES[search_type]
+                    place_type = config['type']
+                    keywords = config['keywords']
 
-                logger.info(f"正在搜尋 {district} 的 {search_type}...")
+                    logger.info(f"正在搜尋 {district} 的 {search_type}...")
 
-                # 使用 place type 搜尋
-                district_results = self.search_restaurants_in_district(
-                    district, place_type
-                )
-                taipei_restaurants.extend(district_results)
-
-                # 使用關鍵字搜尋補充
-                for keyword in keywords:
-                    keyword_results = self.search_by_keyword(
-                        district, keyword, place_type
+                    # 使用 place type 搜尋
+                    district_results = self.search_restaurants_in_district(
+                        district, place_type
                     )
-                    taipei_restaurants.extend(keyword_results)
+                    taipei_restaurants.extend(district_results)
 
-                logger.info(
-                    f"在 {district} 找到 {len(district_results)} 家 {search_type}"
-                )
+                    # 使用關鍵字搜尋補充
+                    for keyword in keywords:
+                        keyword_results = self.search_by_keyword(
+                            district, keyword, place_type
+                        )
+                        taipei_restaurants.extend(keyword_results)
+
+                    logger.info(
+                        f"在 {district} 找到 {len(district_results)} 家 {search_type}"
+                    )
+        except QuotaExceededError as e:
+            logger.warning(f"搜尋階段配額超出: {e}")
+            quota_exceeded = True
 
         # 移除重複
         unique_restaurants = self.deduplicate_restaurants(taipei_restaurants)
@@ -311,18 +327,22 @@ class DataCollectionPipeline:
         detailed_results: list[dict[str, Any]] = []
         total = len(unique_restaurants)
 
-        for i, restaurant in enumerate(unique_restaurants, start=1):
-            logger.info(f"處理中 ({i}/{total}): {restaurant['name']}")
+        try:
+            for i, restaurant in enumerate(unique_restaurants, start=1):
+                logger.info(f"處理中 ({i}/{total}): {restaurant['name']}")
 
-            detailed_data = await self.collect_restaurant_data(restaurant['place_id'])
+                detailed_data = await self.collect_restaurant_data(restaurant['place_id'])
 
-            if detailed_data:
-                detailed_results.append(detailed_data)
+                if detailed_data:
+                    detailed_results.append(detailed_data)
 
-            # 速率限制
-            await asyncio.sleep(API_CONFIG['REQUEST_DELAY_SECONDS'])
+                # 速率限制
+                await asyncio.sleep(API_CONFIG['REQUEST_DELAY_SECONDS'])
+        except QuotaExceededError as e:
+            logger.warning(f"詳細資料收集階段配額超出: {e}")
 
         logger.info(f"成功收集 {len(detailed_results)} 家店家的詳細資料")
+        self.quota_tracker.log_usage()
         return detailed_results
 
     async def batch_collect_all_categories(self) -> list[dict[str, Any]]:
