@@ -56,7 +56,7 @@ export function RandomPicker({ open, onOpenChange }: RandomPickerProps) {
     if (open && restaurants.length > 0 && !selectedRestaurant) {
       spin()
     }
-  }, [open, restaurants.length])
+  }, [open, restaurants.length, selectedRestaurant, spin])
 
   const spinRotation = spinAnimation.interpolate({
     inputRange: [0, 1],

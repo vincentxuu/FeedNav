@@ -1,3 +1,4 @@
+import { memo, useCallback } from 'react'
 import { FlatList, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -7,6 +8,23 @@ import { Heart } from '@tamagui/lucide-icons'
 import { RestaurantCard, Button } from '@feednav/ui'
 import { useFavorites } from '@/lib/queries'
 import { useAuth } from '@/lib/auth-context'
+import type { Restaurant } from '@feednav/shared'
+
+// Memoized restaurant list item for better FlatList performance
+const FavoriteListItem = memo(function FavoriteListItem({
+  restaurant,
+  onPress,
+}: {
+  restaurant: Restaurant
+  onPress: () => void
+}) {
+  return (
+    <RestaurantCard
+      restaurant={restaurant}
+      onPress={onPress}
+    />
+  )
+})
 
 export default function FavoritesScreen() {
   const router = useRouter()
@@ -14,6 +32,16 @@ export default function FavoritesScreen() {
   const { data, isLoading, refetch, isRefetching } = useFavorites()
 
   const favorites = data?.data?.items ?? []
+
+  const renderFavoriteItem = useCallback(
+    ({ item }: { item: Restaurant }) => (
+      <FavoriteListItem
+        restaurant={item}
+        onPress={() => router.push(`/restaurant/${item.id}`)}
+      />
+    ),
+    [router]
+  )
 
   if (!isAuthenticated) {
     return (
@@ -55,12 +83,7 @@ export default function FavoritesScreen() {
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
           }
-          renderItem={({ item }) => (
-            <RestaurantCard
-              restaurant={item}
-              onPress={() => router.push(`/restaurant/${item.id}`)}
-            />
-          )}
+          renderItem={renderFavoriteItem}
           ListEmptyComponent={
             <YStack flex={1} alignItems="center" justifyContent="center" padding="$8" gap="$3">
               <Heart size={48} color="$textMuted" />

@@ -46,8 +46,12 @@ export function handleDeepLink(url: string): void {
       router.push('/(tabs)/map')
     } else if (parsed.path === 'nearby') {
       router.push('/nearby')
-    } else if (parsed.path.startsWith('auth/')) {
-      router.push(`/${parsed.path}` as any)
+    } else if (parsed.path === 'auth/login') {
+      router.push('/auth/login')
+    } else if (parsed.path === 'auth/register') {
+      router.push('/auth/register')
+    } else if (parsed.path === 'auth/callback') {
+      router.push('/auth/callback')
     }
   }
 

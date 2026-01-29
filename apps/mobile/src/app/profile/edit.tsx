@@ -51,7 +51,7 @@ export default function EditProfileScreen() {
       Alert.alert('成功', '個人資料已更新', [
         { text: '確定', onPress: () => router.back() },
       ])
-    } catch (error) {
+    } catch {
       Alert.alert('錯誤', '更新失敗，請稍後再試')
     } finally {
       setIsLoading(false)

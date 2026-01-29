@@ -1,7 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import NetInfo from '@react-native-community/netinfo'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import type { Restaurant } from '@feednav/shared'
+
+// Constants
+const CACHE_CONFIG = {
+  EXPIRY_24H: 24 * 60 * 60 * 1000,
+  EXPIRY_7D: 7 * 24 * 60 * 60 * 1000,
+  EXPIRY_30D: 30 * 24 * 60 * 60 * 1000,
+} as const
 
 const CACHE_KEYS = {
   RESTAURANTS: 'cache:restaurants',
@@ -9,8 +16,6 @@ const CACHE_KEYS = {
   RECENT_SEARCHES: 'cache:recent_searches',
   USER_PREFERENCES: 'cache:user_preferences',
 } as const
-
-const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 interface CacheItem<T> {
   data: T
@@ -40,7 +45,11 @@ export function useNetworkStatus() {
 }
 
 // Generic cache functions
-async function setCache<T>(key: string, data: T, expiryMs = CACHE_EXPIRY_MS): Promise<void> {
+async function setCache<T>(
+  key: string,
+  data: T,
+  expiryMs = CACHE_CONFIG.EXPIRY_24H
+): Promise<void> {
   const cacheItem: CacheItem<T> = {
     data,
     timestamp: Date.now(),
@@ -95,7 +104,7 @@ export async function addRecentSearch(term: string): Promise<void> {
   const searches = (await getCache<string[]>(CACHE_KEYS.RECENT_SEARCHES)) ?? []
   const filtered = searches.filter((s) => s !== term)
   const updated = [term, ...filtered].slice(0, 10) // Keep last 10
-  await setCache(CACHE_KEYS.RECENT_SEARCHES, updated, 7 * 24 * 60 * 60 * 1000) // 7 days
+  await setCache(CACHE_KEYS.RECENT_SEARCHES, updated, CACHE_CONFIG.EXPIRY_7D)
 }
 
 export async function getRecentSearches(): Promise<string[]> {
@@ -120,7 +129,7 @@ export async function saveUserPreferences(prefs: Partial<UserPreferences>): Prom
     preferredPriceRange: null,
   }
   const updated = { ...current, ...prefs }
-  await setCache(CACHE_KEYS.USER_PREFERENCES, updated, 30 * 24 * 60 * 60 * 1000) // 30 days
+  await setCache(CACHE_KEYS.USER_PREFERENCES, updated, CACHE_CONFIG.EXPIRY_30D)
 }
 
 export async function getUserPreferences(): Promise<UserPreferences | null> {
@@ -148,47 +157,97 @@ export function useOfflineData<T>(
   const [isFromCache, setIsFromCache] = useState(false)
   const { isOffline } = useNetworkStatus()
 
+  // Use refs to store latest values without causing re-renders
+  const fetchFnRef = useRef(fetchFn)
+  const keyRef = useRef(key)
+  const cacheTimeRef = useRef(options?.cacheTime)
+  const isMounted = useRef(true)
+  const hasFetched = useRef(false)
+
+  // Update refs when values change
+  useEffect(() => {
+    fetchFnRef.current = fetchFn
+    keyRef.current = key
+    cacheTimeRef.current = options?.cacheTime
+  })
+
   const refetch = useCallback(async () => {
+    if (!isMounted.current) return
+
     setIsLoading(true)
     setError(null)
+
+    const currentKey = keyRef.current
+    const currentFetchFn = fetchFnRef.current
+    const currentCacheTime = cacheTimeRef.current
 
     try {
       // Try to fetch from network first
       if (!isOffline) {
-        const freshData = await fetchFn()
-        setData(freshData)
-        setIsFromCache(false)
-        await setCache(key, freshData, options?.cacheTime)
+        const freshData = await currentFetchFn()
+        if (isMounted.current) {
+          setData(freshData)
+          setIsFromCache(false)
+        }
+        await setCache(currentKey, freshData, currentCacheTime)
         return
       }
 
       // Fall back to cache if offline
-      const cached = await getCache<T>(key)
-      if (cached) {
-        setData(cached)
-        setIsFromCache(true)
-      } else {
-        setError(new Error('無網路連線且沒有快取資料'))
+      const cached = await getCache<T>(currentKey)
+      if (isMounted.current) {
+        if (cached) {
+          setData(cached)
+          setIsFromCache(true)
+        } else {
+          setError(new Error('無網路連線且沒有快取資料'))
+        }
       }
     } catch (err) {
       // On error, try to use cache
-      const cached = await getCache<T>(key)
-      if (cached) {
-        setData(cached)
-        setIsFromCache(true)
-      } else {
-        setError(err instanceof Error ? err : new Error('未知錯誤'))
+      const cached = await getCache<T>(currentKey)
+      if (isMounted.current) {
+        if (cached) {
+          setData(cached)
+          setIsFromCache(true)
+        } else {
+          setError(err instanceof Error ? err : new Error('未知錯誤'))
+        }
       }
     } finally {
-      setIsLoading(false)
+      if (isMounted.current) {
+        setIsLoading(false)
+      }
     }
-  }, [key, fetchFn, isOffline, options?.cacheTime])
+  }, [isOffline])
 
+  // Initial fetch
   useEffect(() => {
-    if (options?.enabled !== false) {
+    isMounted.current = true
+
+    if (options?.enabled === false) {
+      setIsLoading(false)
+      return
+    }
+
+    // Prevent duplicate fetches
+    if (hasFetched.current) return
+    hasFetched.current = true
+
+    refetch()
+
+    return () => {
+      isMounted.current = false
+    }
+  }, [options?.enabled, refetch])
+
+  // Refetch when key changes
+  useEffect(() => {
+    if (hasFetched.current && options?.enabled !== false) {
+      hasFetched.current = false
       refetch()
     }
-  }, [options?.enabled])
+  }, [key])
 
   return {
     data,

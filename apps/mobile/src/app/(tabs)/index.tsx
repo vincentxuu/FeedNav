@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, memo } from 'react'
 import { FlatList, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -9,6 +9,18 @@ import { RestaurantCard, Button, Badge, Input } from '@feednav/ui'
 import { useRestaurants } from '@/lib/queries'
 import { FilterSheet, type FilterState } from '@/components/FilterSheet'
 import { RandomPicker } from '@/components/RandomPicker'
+import type { Restaurant } from '@feednav/shared'
+
+// Memoized restaurant list item for better FlatList performance
+const RestaurantListItem = memo(function RestaurantListItem({
+  restaurant,
+  onPress,
+}: {
+  restaurant: Restaurant
+  onPress: () => void
+}) {
+  return <RestaurantCard restaurant={restaurant} onPress={onPress} />
+})
 
 export default function HomeScreen() {
   const router = useRouter()
@@ -62,6 +74,16 @@ export default function HomeScreen() {
   const clearAllFilters = useCallback(() => {
     setFilters({})
   }, [])
+
+  const renderRestaurantItem = useCallback(
+    ({ item }: { item: Restaurant }) => (
+      <RestaurantListItem
+        restaurant={item}
+        onPress={() => router.push(`/restaurant/${item.id}`)}
+      />
+    ),
+    [router]
+  )
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['top']}>
@@ -182,15 +204,11 @@ export default function HomeScreen() {
           data={restaurants}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 12 }}
+          keyboardDismissMode="on-drag"
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
           }
-          renderItem={({ item }) => (
-            <RestaurantCard
-              restaurant={item}
-              onPress={() => router.push(`/restaurant/${item.id}`)}
-            />
-          )}
+          renderItem={renderRestaurantItem}
           ListEmptyComponent={
             <YStack flex={1} alignItems="center" justifyContent="center" padding="$8">
               <Text color="$textMuted">

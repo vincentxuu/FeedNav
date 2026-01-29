@@ -29,6 +29,12 @@ import { useAuth } from '@/lib/auth-context'
 
 const { width } = Dimensions.get('window')
 
+// Semantic color constants
+const COLORS = {
+  HEART_RED: '#ef4444',
+  STAR_GOLD: '#fbbf24',
+} as const
+
 export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
@@ -43,8 +49,6 @@ export default function RestaurantDetailScreen() {
 
   const [isFavorited, setIsFavorited] = useState(false)
   const [isVisited, setIsVisited] = useState(false)
-  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false)
-  const [isVisitLoading, setIsVisitLoading] = useState(false)
 
   // Sync state with restaurant data
   useEffect(() => {
@@ -54,6 +58,8 @@ export default function RestaurantDetailScreen() {
     }
   }, [restaurant])
 
+  const isFavoriteLoading = addFavorite.isPending || removeFavorite.isPending
+
   const handleToggleFavorite = useCallback(async () => {
     if (!isAuthenticated) {
       router.push('/auth/login')
@@ -62,7 +68,6 @@ export default function RestaurantDetailScreen() {
 
     if (!restaurant) return
 
-    setIsFavoriteLoading(true)
     try {
       const restaurantId = parseInt(restaurant.id, 10)
       if (isFavorited) {
@@ -72,12 +77,12 @@ export default function RestaurantDetailScreen() {
         await addFavorite.mutateAsync(restaurantId)
         setIsFavorited(true)
       }
-    } catch (error) {
+    } catch {
       Alert.alert('錯誤', '操作失敗，請稍後再試')
-    } finally {
-      setIsFavoriteLoading(false)
     }
   }, [isAuthenticated, restaurant, isFavorited, router, addFavorite, removeFavorite])
+
+  const isVisitLoading = addVisit.isPending || removeVisit.isPending
 
   const handleToggleVisit = useCallback(async () => {
     if (!isAuthenticated) {
@@ -87,7 +92,6 @@ export default function RestaurantDetailScreen() {
 
     if (!restaurant) return
 
-    setIsVisitLoading(true)
     try {
       const restaurantId = parseInt(restaurant.id, 10)
       if (isVisited) {
@@ -97,10 +101,8 @@ export default function RestaurantDetailScreen() {
         await addVisit.mutateAsync(restaurantId)
         setIsVisited(true)
       }
-    } catch (error) {
+    } catch {
       Alert.alert('錯誤', '操作失敗，請稍後再試')
-    } finally {
-      setIsVisitLoading(false)
     }
   }, [isAuthenticated, restaurant, isVisited, router, addVisit, removeVisit])
 
@@ -131,7 +133,7 @@ export default function RestaurantDetailScreen() {
         title: restaurant.name,
         message: `來看看這間餐廳：${restaurant.name}\n${restaurant.address || ''}\nhttps://feednav.cc/restaurant/${restaurant.id}`,
       })
-    } catch (error) {
+    } catch {
       // User cancelled or error occurred
     }
   }, [restaurant])
@@ -210,8 +212,8 @@ export default function RestaurantDetailScreen() {
               ) : (
                 <Heart
                   size={24}
-                  color={isFavorited ? '#ef4444' : '$color'}
-                  fill={isFavorited ? '#ef4444' : 'transparent'}
+                  color={isFavorited ? COLORS.HEART_RED : '$color'}
+                  fill={isFavorited ? COLORS.HEART_RED : 'transparent'}
                 />
               )}
             </Button>
@@ -277,7 +279,7 @@ export default function RestaurantDetailScreen() {
               </XStack>
               <XStack alignItems="center" gap="$3" flexWrap="wrap">
                 <XStack alignItems="center" gap="$1">
-                  <Star size={18} color="#fbbf24" fill="#fbbf24" />
+                  <Star size={18} color={COLORS.STAR_GOLD} fill={COLORS.STAR_GOLD} />
                   <Text fontSize={16} fontWeight="600" color="$color">
                     {restaurant.rating?.toFixed(1) || 'N/A'}
                   </Text>

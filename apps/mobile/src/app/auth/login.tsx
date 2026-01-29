@@ -9,6 +9,7 @@ import { Button, Input } from '@feednav/ui'
 import { useAuth } from '@/lib/auth-context'
 import api from '@/lib/api'
 import * as WebBrowser from 'expo-web-browser'
+import { VALIDATION } from '@/lib/constants'
 
 export default function LoginScreen() {
   const router = useRouter()
@@ -22,6 +23,11 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (!email || !password) {
       setError('請填寫所有欄位')
+      return
+    }
+
+    if (!VALIDATION.EMAIL_REGEX.test(email)) {
+      setError('請輸入有效的電子郵件')
       return
     }
 

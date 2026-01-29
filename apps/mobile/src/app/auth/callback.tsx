@@ -12,26 +12,31 @@ export default function OAuthCallbackScreen() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      if (params.error) {
-        // OAuth failed
-        router.replace('/auth/login')
-        return
-      }
-
-      if (params.token) {
-        // Save tokens
-        await SecureStore.setItemAsync('auth_token', params.token)
-        if (params.refreshToken) {
-          await SecureStore.setItemAsync('refresh_token', params.refreshToken)
+      try {
+        if (params.error) {
+          // OAuth failed
+          router.replace('/auth/login')
+          return
         }
 
-        // Refresh user data
-        await refreshUser()
+        if (params.token) {
+          // Save tokens
+          await SecureStore.setItemAsync('auth_token', params.token)
+          if (params.refreshToken) {
+            await SecureStore.setItemAsync('refresh_token', params.refreshToken)
+          }
 
-        // Navigate to home
-        router.replace('/(tabs)')
-      } else {
-        // No token received
+          // Refresh user data
+          await refreshUser()
+
+          // Navigate to home
+          router.replace('/(tabs)')
+        } else {
+          // No token received
+          router.replace('/auth/login')
+        }
+      } catch {
+        // Handle SecureStore or other errors
         router.replace('/auth/login')
       }
     }

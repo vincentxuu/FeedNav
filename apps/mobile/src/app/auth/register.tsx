@@ -7,6 +7,7 @@ import { Mail, Lock, Eye, EyeOff, User, ArrowLeft } from '@tamagui/lucide-icons'
 
 import { Button, Input } from '@feednav/ui'
 import { useAuth } from '@/lib/auth-context'
+import { VALIDATION } from '@/lib/constants'
 
 export default function RegisterScreen() {
   const router = useRouter()
@@ -25,13 +26,18 @@ export default function RegisterScreen() {
       return
     }
 
+    if (!VALIDATION.EMAIL_REGEX.test(email)) {
+      setError('請輸入有效的電子郵件')
+      return
+    }
+
     if (password !== confirmPassword) {
       setError('密碼不一致')
       return
     }
 
-    if (password.length < 8) {
-      setError('密碼長度至少 8 個字元')
+    if (password.length < VALIDATION.MIN_PASSWORD_LENGTH) {
+      setError(`密碼長度至少 ${VALIDATION.MIN_PASSWORD_LENGTH} 個字元`)
       return
     }
 

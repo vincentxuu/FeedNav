@@ -72,6 +72,9 @@ export function useAddFavorite() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.favorites.all })
     },
+    onError: (error) => {
+      console.error('Failed to add favorite:', error)
+    },
   })
 }
 
@@ -82,6 +85,9 @@ export function useRemoveFavorite() {
     mutationFn: (restaurantId: number) => api.removeFavorite(restaurantId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.favorites.all })
+    },
+    onError: (error) => {
+      console.error('Failed to remove favorite:', error)
     },
   })
 }
@@ -109,6 +115,9 @@ export function useAddVisit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.visits.all })
     },
+    onError: (error) => {
+      console.error('Failed to add visit:', error)
+    },
   })
 }
 
@@ -119,6 +128,9 @@ export function useRemoveVisit() {
     mutationFn: (restaurantId: number) => api.removeVisit(restaurantId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.visits.all })
+    },
+    onError: (error) => {
+      console.error('Failed to remove visit:', error)
     },
   })
 }

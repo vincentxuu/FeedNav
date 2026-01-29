@@ -4,6 +4,9 @@ import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import Constants from 'expo-constants'
 
+// Android notification light color (matches theme primary)
+const NOTIFICATION_LIGHT_COLOR = '#f97316'
+
 // Configure notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -61,7 +64,7 @@ export function usePushNotifications() {
           name: 'default',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#f97316',
+          lightColor: NOTIFICATION_LIGHT_COLOR,
         })
       }
 

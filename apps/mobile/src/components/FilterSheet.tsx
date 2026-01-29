@@ -5,6 +5,7 @@ import { X, Check } from '@tamagui/lucide-icons'
 
 import { Button, Badge } from '@feednav/ui'
 import { useTags } from '@/lib/queries'
+import { DISTRICTS, CUISINES, PRICE_LEVELS } from '@/lib/constants'
 
 export interface FilterState {
   district?: string
@@ -19,45 +20,6 @@ interface FilterSheetProps {
   filters: FilterState
   onApply: (filters: FilterState) => void
 }
-
-const DISTRICTS = [
-  '大安區',
-  '信義區',
-  '中山區',
-  '松山區',
-  '中正區',
-  '萬華區',
-  '大同區',
-  '內湖區',
-  '南港區',
-  '士林區',
-  '北投區',
-  '文山區',
-]
-
-const CUISINES = [
-  '台灣料理',
-  '日本料理',
-  '韓國料理',
-  '中式料理',
-  '義式料理',
-  '美式料理',
-  '東南亞料理',
-  '港式料理',
-  '早午餐',
-  '咖啡廳',
-  '甜點',
-  '火鍋',
-  '燒烤',
-  '素食',
-]
-
-const PRICE_LEVELS = [
-  { label: '$', value: 1 },
-  { label: '$$', value: 2 },
-  { label: '$$$', value: 3 },
-  { label: '$$$$', value: 4 },
-]
 
 export function FilterSheet({ open, onOpenChange, filters, onApply }: FilterSheetProps) {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters)
