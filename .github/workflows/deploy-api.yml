@@ -45,7 +45,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: ${{ env.WORKING_DIR }}/pnpm-lock.yaml
+          cache-dependency-path: feednav-serverless/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -89,7 +89,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: ${{ env.WORKING_DIR }}/pnpm-lock.yaml
+          cache-dependency-path: feednav-serverless/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -137,7 +137,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: ${{ env.WORKING_DIR }}/pnpm-lock.yaml
+          cache-dependency-path: feednav-serverless/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
