@@ -29,6 +29,8 @@ const eslintConfig = [
           varsIgnorePattern: '^_',
         },
       ],
+      // Disable rules incompatible with ESLint 9
+      '@typescript-eslint/no-unsafe-declaration-merging': 'off',
     },
   },
 ]
