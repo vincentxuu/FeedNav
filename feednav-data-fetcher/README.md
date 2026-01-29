@@ -18,54 +18,140 @@
 
 ## 安裝說明
 
-1. 安裝依賴套件：
 ```bash
-pip install -r requirements.txt
+cd feednav-data-fetcher
+
+# 建立虛擬環境並安裝依賴
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 ```
 
-2. 設置環境變數：
-```bash
-cp .env.example .env
-```
+### 設置環境變數
 
-3. 編輯 `.env` 檔案：
-```
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+```bash
+# 建立 .env 檔案
+echo "GOOGLE_MAPS_API_KEY=你的API金鑰" > .env
 ```
 
 ---
 
 ## 使用方式
 
-### 步驟一：收集餐廳資料
+### 查看收集進度
 
 ```bash
-python main.py
+python main.py --status
+# 或簡寫
+python main.py -s
 ```
 
-執行後會在當前目錄產生 `taipei_restaurants_YYYYMMDD_HHMMSS.json`。
+### 收集指定區域
+
+```bash
+# 收集大安區和信義區
+python main.py --districts 大安區 信義區
+
+# 簡寫
+python main.py -d 大安區 信義區
+```
+
+### 自動收集未完成的區域
+
+```bash
+# 收集所有未完成的區域
+python main.py --pending
+
+# 只收集前 2 個未完成的區域（分批收集）
+python main.py --pending --limit 2
+# 或
+python main.py -p -l 2
+```
+
+### 指定搜尋類型
+
+```bash
+# 同時收集餐廳和咖啡廳
+python main.py -d 大安區 --types restaurant cafe
+
+# 可用類型：restaurant, dessert, cafe, healthy
+```
+
+### 重設收集進度
+
+```bash
+# 重設指定區域（重新收集）
+python main.py --reset 大安區
+
+# 重設所有進度
+python main.py --reset-all
+```
+
+### 可用區域
+
+```
+中正區, 大同區, 中山區, 松山區, 大安區, 萬華區,
+信義區, 士林區, 北投區, 內湖區, 南港區, 文山區
+```
+
+執行後會在當前目錄產生 `taipei_restaurants_<區域>_YYYYMMDD_HHMMSS.json`。
 
 ### 步驟二：整合到資料庫
 
 > **重要**：FeedNav-Serverless 使用 Cloudflare D1 資料庫。
+>
+> **注意事項**：
+> - `tags` 由 migration 管理，**不從本地匯出**
+> - `restaurant_tags` 使用 **tag name 子查詢**，解決本地與遠端 tag_id 不同步問題
+> - 必須使用 `pnpm exec wrangler`（專案內 v4.61.0+），避免使用全域舊版
 
 ```bash
 # 1. 整合到臨時 SQLite 檔案
 python integrate_data.py taipei_restaurants_20260128.json ./temp_import.db
 
 # 2. 匯出為 SQL
-sqlite3 ./temp_import.db .dump > import.sql
+# 2a. 匯出 restaurants
+sqlite3 ./temp_import.db .dump | grep "^INSERT INTO restaurants " > import.sql
 
-# 3. 匯入到遠端 D1（Preview 環境）
+# 2b. 匯出 restaurant_tags（使用 tag name 子查詢 + INSERT OR IGNORE）
+sqlite3 ./temp_import.db "
+  SELECT 'INSERT OR IGNORE INTO restaurant_tags (restaurant_id, tag_id) SELECT ' ||
+         rt.restaurant_id || ', id FROM tags WHERE name = ''' ||
+         REPLACE(t.name, '''', '''''') || ''';'
+  FROM restaurant_tags rt JOIN tags t ON rt.tag_id = t.id;
+" >> import.sql
+
+# 3. 匯入到遠端 D1
 cd ../feednav-serverless
-wrangler d1 execute feednav-db-preview --remote --file=../feednav-data-fetcher/import.sql
 
-# 或匯入到 Production 環境
-wrangler d1 execute feednav-db --remote --file=../feednav-data-fetcher/import.sql -e production
+# Preview 環境
+pnpm exec wrangler d1 execute feednav-db-preview --remote --file=../feednav-data-fetcher/import.sql
+
+# Production 環境
+pnpm exec wrangler d1 execute feednav-db --remote --file=../feednav-data-fetcher/import.sql -e production
 
 # 4. 清理臨時檔案
 cd ../feednav-data-fetcher
 rm -f temp_import.db import.sql
+```
+
+#### 如果有新的 tags
+
+如果本地使用了遠端不存在的 tags，需要先新增 migration：
+
+```bash
+# 1. 查看本地使用的所有 tags
+grep "WHERE name = '" import.sql | sed "s/.*WHERE name = '//; s/';//" | sort -u
+
+# 2. 在 feednav-serverless/migrations/ 建立新的 migration
+# 例如：0003_add_missing_tags.sql
+
+# 3. 應用 migration 到遠端
+cd ../feednav-serverless
+pnpm exec wrangler d1 execute feednav-db --remote -e production --file=migrations/0003_add_missing_tags.sql
+
+# 4. 重新匯入 restaurant_tags
+pnpm exec wrangler d1 execute feednav-db --remote -e production --file=../feednav-data-fetcher/import.sql
 ```
 
 #### 安靜模式
@@ -74,10 +160,17 @@ rm -f temp_import.db import.sql
 python integrate_data.py taipei_restaurants_20260128.json ./temp_import.db --quiet
 ```
 
-### 一鍵執行（收集+整合）
+### 一鍵執行（推薦）
 
 ```bash
+# 部署到 Preview 環境
 ./batch_integration.sh
+
+# 部署到 Production 環境
+./batch_integration.sh --production
+
+# 跳過資料收集，使用現有 JSON
+./batch_integration.sh --skip-collection --production
 ```
 
 ---
@@ -89,6 +182,8 @@ feednav-data-fetcher/
 ├── main.py                  # 主程式入口（資料收集）
 ├── integrate_data.py        # 資料庫整合腳本
 ├── batch_integration.sh     # 一鍵執行腳本
+├── collection_tracker.py    # 收集進度追蹤器
+├── collection_progress.json # 收集進度記錄（自動產生）
 ├── data_collector.py        # 資料收集管道
 ├── location_processor.py    # 地點處理器
 ├── cuisine_classifier.py    # 菜系分類器
@@ -96,7 +191,7 @@ feednav-data-fetcher/
 ├── data_transformer.py      # 資料格式轉換器
 ├── database_inserter.py     # 資料庫插入器
 ├── requirements.txt         # 依賴套件
-└── .env.example             # 環境變數範例
+└── .env                     # 環境變數（需自行建立）
 ```
 
 ---
@@ -112,6 +207,26 @@ Google Places API → JSON 檔案 → Cloudflare D1 Database
 ---
 
 ## 核心模組
+
+### CollectionTracker (collection_tracker.py)
+收集進度追蹤器，記錄已收集的區域：
+- 自動儲存進度到 `collection_progress.json`
+- 支援查看已收集/待收集區域
+- 支援重設特定區域進度
+
+進度檔案格式：
+```json
+{
+  "collected_districts": {
+    "大安區": {
+      "collected_at": "2026-01-29T10:30:00",
+      "restaurant_count": 150,
+      "output_file": "taipei_restaurants_大安_20260129_103000.json"
+    }
+  },
+  "last_updated": "2026-01-29T10:30:00"
+}
+```
 
 ### DataCollectionPipeline (data_collector.py)
 主要的資料收集管道，負責協調各個處理模組。
@@ -284,6 +399,34 @@ TRANSFORMER_CONFIG = {
 
 ---
 
+## 建議的收集流程
+
+為避免一次收集過多資料（API 配額考量），建議分批收集：
+
+| 批次 | 區域 | 說明 |
+|------|------|------|
+| 第 1 批 | 大安區、信義區 | 熱門區域 |
+| 第 2 批 | 中山區、松山區 | 商業區 |
+| 第 3 批 | 中正區、萬華區 | 市中心 |
+| 第 4 批 | 士林區、北投區 | 北區 |
+| 第 5 批 | 內湖區、南港區 | 東區 |
+| 第 6 批 | 大同區、文山區 | 其他 |
+
+```bash
+# 1. 查看目前進度
+python main.py -s
+
+# 2. 分批收集（每次 2 個區域）
+python main.py -p -l 2
+
+# 3. 重複步驟 2 直到全部完成
+
+# 4. 整合到資料庫
+python integrate_data.py taipei_restaurants_*.json ./temp.db
+```
+
+---
+
 ## 進階整合
 
 ### 直接 API 上傳
@@ -310,47 +453,73 @@ def upload_restaurant(api_url: str, api_key: str, restaurant_data: dict):
     return response.json()
 ```
 
-### 批次處理腳本
+### 批次處理腳本 (batch_integration.sh)
 
-`batch_integration.sh` 腳本流程：
+一鍵執行完整資料管線：**資料收集 → 資料整合 → 部署到 Cloudflare D1**
+
+#### 執行流程
+
+```
+1. check_prerequisites   - 檢查環境 (目錄、.env、sqlite3、Python 依賴)
+2. collect_data          - 執行 main.py 收集餐廳資料 (30分鐘逾時)
+3. find_latest_json      - 找到最新的 taipei_restaurants_*.json 檔案
+4. integrate_data        - 執行 integrate_data.py 匯入臨時 SQLite
+5. validate_database     - 驗證資料完整性，顯示餐廳和標籤數量
+6. export_sql            - 匯出 SQL（restaurants + restaurant_tags via tag name）
+7. deploy_to_cloudflare  - 透過 pnpm exec wrangler 部署到 D1
+8. cleanup               - 清理暫存檔案，保留最新 3 個 JSON
+```
+
+#### SQL 匯出細節
+
+`export_sql` 步驟會產生以下格式的 SQL：
+
+```sql
+-- restaurants: 直接使用 sqlite3 .dump 的 INSERT 語句
+INSERT INTO restaurants VALUES(1,'餐廳名稱',...);
+
+-- restaurant_tags: 使用 tag name 子查詢（解決 ID 不同步問題）
+INSERT OR IGNORE INTO restaurant_tags (restaurant_id, tag_id)
+SELECT 1, id FROM tags WHERE name = '有Wi-Fi';
+```
+
+這樣無論遠端 D1 的 tag_id 是什麼，只要 tag name 存在就能正確建立關聯。
+
+#### 可用參數
+
+| 參數 | 說明 |
+|------|------|
+| `--skip-collection` | 跳過資料收集，使用現有 JSON 檔案 |
+| `--preview` | 部署到 Preview 環境 (預設) |
+| `--production` | 部署到 Production 環境 |
+| `--no-deploy` | 只處理資料，不部署到 Cloudflare |
+| `--help` | 顯示使用說明 |
+
+#### 使用範例
 
 ```bash
-#!/bin/bash
+# 完整流程：收集資料並部署到 Preview 環境
+./batch_integration.sh
 
-DATAFETCHER_DIR="$(cd "$(dirname "$0")" && pwd)"
-SERVERLESS_DIR="$DATAFETCHER_DIR/../feednav-serverless"
+# 使用現有 JSON 資料部署到 Preview
+./batch_integration.sh --skip-collection
 
-cd "$DATAFETCHER_DIR"
+# 收集資料並部署到 Production 環境
+./batch_integration.sh --production
 
-echo "開始資料收集..."
-python main.py
+# 只處理資料產生 SQL，不部署
+./batch_integration.sh --no-deploy
 
-# 找到最新的 JSON 檔案
-LATEST_JSON=$(ls -t taipei_restaurants_*.json 2>/dev/null | head -n1)
-
-if [ -n "$LATEST_JSON" ]; then
-    echo "找到最新資料檔案：$LATEST_JSON"
-
-    # 整合到臨時 SQLite
-    python integrate_data.py "$LATEST_JSON" ./temp_import.db
-
-    # 匯出 SQL
-    sqlite3 ./temp_import.db .dump > import.sql
-
-    # 匯入到遠端 D1 Preview
-    cd "$SERVERLESS_DIR"
-    wrangler d1 execute feednav-db-preview --remote --file="$DATAFETCHER_DIR/import.sql"
-
-    # 清理
-    cd "$DATAFETCHER_DIR"
-    rm -f temp_import.db import.sql
-
-    echo "完成！"
-else
-    echo "錯誤：找不到資料檔案"
-    exit 1
-fi
+# 使用現有資料部署到 Production
+./batch_integration.sh --skip-collection --production
 ```
+
+#### 重要特點
+
+- **錯誤處理**：使用 `set -e`，任何錯誤立即停止
+- **中斷處理**：捕捉 `INT/TERM` 信號，確保清理暫存檔案
+- **自動清理**：只保留最新 3 個 JSON 檔案，避免磁碟空間浪費
+- **環境檢查**：自動驗證 `.env`、`sqlite3`、Python 依賴等
 
 ### 定期更新（Cron Job）
 
@@ -396,6 +565,29 @@ fi
 ```
 原因：一次載入太多餐廳資料
 解決：分批處理大量資料，或使用 --quiet 參數減少輸出
+```
+
+### Wrangler FileHandle 錯誤
+```
+錯誤：A FileHandle object was closed during garbage collection
+原因：全域安裝的 wrangler 版本過舊（< 4.61.0）
+解決：使用 pnpm exec wrangler 執行專案內的版本
+```
+
+### FOREIGN KEY constraint failed
+```
+錯誤：FOREIGN KEY constraint failed: SQLITE_CONSTRAINT
+原因：restaurant_tags 參照的 tag name 在遠端 tags 表中不存在
+解決：
+1. 在 feednav-serverless/migrations/ 新增缺少的 tags
+2. 執行 migration 後重新匯入
+```
+
+### 標籤關聯數量不符
+```
+現象：本地 434 筆 restaurant_tags，遠端只有 306 筆
+原因：部分 tag name 在遠端不存在（會被 INSERT OR IGNORE 跳過）
+解決：檢查並新增缺少的 tags 到 migration
 ```
 
 ---

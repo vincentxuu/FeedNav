@@ -24,6 +24,22 @@ TAIPEI_DISTRICTS: list[str] = [
     '信義區', '士林區', '北投區', '內湖區', '南港區', '文山區'
 ]
 
+# 台北市行政區中心座標
+DISTRICT_COORDINATES: dict[str, tuple[float, float]] = {
+    '中正區': (25.0323, 121.5185),
+    '大同區': (25.0633, 121.5130),
+    '中山區': (25.0685, 121.5336),
+    '松山區': (25.0601, 121.5578),
+    '大安區': (25.0267, 121.5435),
+    '萬華區': (25.0340, 121.4997),
+    '信義區': (25.0305, 121.5712),
+    '士林區': (25.0930, 121.5250),
+    '北投區': (25.1315, 121.5028),
+    '內湖區': (25.0690, 121.5880),
+    '南港區': (25.0385, 121.6065),
+    '文山區': (24.9895, 121.5705),
+}
+
 # API 配置常數
 API_CONFIG = {
     'SEARCH_RADIUS_METERS': 2000,           # 搜尋半徑 (公尺)
@@ -55,7 +71,7 @@ SEARCH_TYPES: dict[str, dict[str, Any]] = {
 # Place Details 請求欄位
 PLACE_DETAIL_FIELDS: list[str] = [
     'name', 'rating', 'price_level', 'formatted_address',
-    'geometry', 'reviews', 'types', 'opening_hours', 'photos'
+    'geometry', 'review', 'type', 'opening_hours', 'photo'
 ]
 
 class DataCollectionPipeline:
@@ -74,6 +90,26 @@ class DataCollectionPipeline:
         self.tag_extractor = ReviewTagExtractor()
         self.quota_tracker = APIQuotaTracker()
 
+    def _normalize_field_names(self, data: dict[str, Any]) -> dict[str, Any]:
+        """
+        標準化 API 回傳的欄位名稱
+
+        Google Places API 請求用單數，但回傳可能用單數或複數
+        """
+        # 單數 -> 複數 的映射
+        field_mapping = {
+            'review': 'reviews',
+            'photo': 'photos',
+            'type': 'types',
+        }
+
+        normalized = dict(data)
+        for singular, plural in field_mapping.items():
+            if singular in normalized and plural not in normalized:
+                normalized[plural] = normalized.pop(singular)
+
+        return normalized
+
     async def collect_restaurant_data(self, place_id: str) -> dict[str, Any] | None:
         """
         收集單一餐廳的詳細資料
@@ -91,6 +127,9 @@ class DataCollectionPipeline:
                 fields=PLACE_DETAIL_FIELDS,
                 language=API_CONFIG['LANGUAGE']
             )['result']
+
+            # 標準化欄位名稱 (API 回傳可能用單數或複數)
+            place_details = self._normalize_field_names(place_details)
 
             location_data = self.location_processor.process_location(place_details)
             cuisine_data = self.cuisine_classifier.classify_cuisine(place_details)
@@ -144,9 +183,15 @@ class DataCollectionPipeline:
             餐廳基本資訊列表 (place_id, name, district)
         """
         try:
+            # 取得行政區中心座標
+            coordinates = DISTRICT_COORDINATES.get(district)
+            if not coordinates:
+                logger.warning(f"找不到 {district} 的座標，跳過 Nearby Search")
+                return []
+
             self.quota_tracker.check_and_increment(APIQuotaTracker.NEARBY_SEARCH)
             places_result = self.gmaps.places_nearby(
-                location=f"{district}, 台北市, 台灣",
+                location=coordinates,
                 radius=API_CONFIG['SEARCH_RADIUS_METERS'],
                 type=place_type,
                 language=API_CONFIG['LANGUAGE']
@@ -265,18 +310,22 @@ class DataCollectionPipeline:
     
     async def batch_collect_taipei_restaurants(
         self,
+        districts: list[str] | None = None,
         search_types: list[str] | None = None
     ) -> list[dict[str, Any]]:
         """
-        批次收集台北市所有行政區的餐廳資料
+        批次收集台北市指定行政區的餐廳資料
 
         Args:
+            districts: 要收集的行政區列表，預設為全部 12 區
             search_types: 要搜尋的類型列表，預設為 ['restaurant']
                           可選：'restaurant', 'dessert', 'cafe', 'healthy'
 
         Returns:
             所有餐廳的詳細資訊列表
         """
+        if districts is None:
+            districts = TAIPEI_DISTRICTS
         if search_types is None:
             search_types = ['restaurant']
 
@@ -285,7 +334,7 @@ class DataCollectionPipeline:
 
         # 搜尋各行政區
         try:
-            for district in TAIPEI_DISTRICTS:
+            for district in districts:
                 if quota_exceeded:
                     break
                 for search_type in search_types:
