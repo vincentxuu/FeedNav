@@ -77,14 +77,29 @@ python main.py -d 大安區 --types restaurant cafe
 # 可用類型：restaurant, dessert, cafe, healthy
 ```
 
+### 強制重新收集
+
+```bash
+# 強制重新收集（忽略已收集記錄，對所有餐廳呼叫 Place Details API）
+python main.py --districts 大安區 --force
+# 或簡寫
+python main.py -d 大安區 -f
+```
+
 ### 重設收集進度
 
 ```bash
-# 重設指定區域（重新收集）
+# 重設指定區域的區域進度
 python main.py --reset 大安區
 
-# 重設所有進度
+# 重設所有區域進度
 python main.py --reset-all
+
+# 重設指定區域的餐廳收集記錄（下次收集時會重新呼叫 Place Details API）
+python main.py --reset-restaurants 大安區
+
+# 重設所有餐廳收集記錄
+python main.py --reset-restaurants
 ```
 
 ### 可用區域
@@ -163,13 +178,19 @@ python integrate_data.py taipei_restaurants_20260128.json ./temp_import.db --qui
 ### 一鍵執行（推薦）
 
 ```bash
-# 部署到 Preview 環境
-./batch_integration.sh
+# 收集大安區的新餐廳並部署到 Preview
+./batch_integration.sh --district 大安區
 
-# 部署到 Production 環境
-./batch_integration.sh --production
+# 強制重新收集整個區域（忽略已收集記錄）
+./batch_integration.sh --district 大安區 --force
 
-# 跳過資料收集，使用現有 JSON
+# 收集信義區並部署到 Production
+./batch_integration.sh --district 信義區 --production
+
+# 只收集不部署（測試用）
+./batch_integration.sh --district 中山區 --no-deploy
+
+# 使用現有 JSON 部署到 Production
 ./batch_integration.sh --skip-collection --production
 ```
 
@@ -209,10 +230,37 @@ Google Places API → JSON 檔案 → Cloudflare D1 Database
 ## 核心模組
 
 ### CollectionTracker (collection_tracker.py)
-收集進度追蹤器，記錄已收集的區域：
+收集進度追蹤器，記錄已收集的區域和餐廳：
 - 自動儲存進度到 `collection_progress.json`
 - 支援查看已收集/待收集區域
 - 支援重設特定區域進度
+- **餐廳層級追蹤**：記錄已收集的 place_id，避免重複呼叫 Place Details API
+
+#### 智慧增量收集邏輯
+
+```
+┌─────────────────────────────────────────┐
+│         搜尋區域餐廳列表                 │
+└─────────────────┬───────────────────────┘
+                  ▼
+┌─────────────────────────────────────────┐
+│   區分新餐廳 vs 已收集餐廳               │
+└─────────────────┬───────────────────────┘
+                  ▼
+          ┌──────────────┐
+          │ 有新餐廳？    │
+          └──────┬───────┘
+         是/     \否
+           ▼       ▼
+┌──────────────┐ ┌──────────────┐
+│ 只收集新餐廳  │ │ 更新舊餐廳   │
+│ (節省配額)   │ │ (保持新鮮度) │
+└──────────────┘ └──────────────┘
+```
+
+- **有新餐廳**：只對新餐廳呼叫 Place Details API（節省配額）
+- **沒有新餐廳**：對舊餐廳呼叫 Place Details API（更新資料）
+- **--force**：強制重新收集所有餐廳（忽略已收集記錄）
 
 進度檔案格式：
 ```json
@@ -223,6 +271,20 @@ Google Places API → JSON 檔案 → Cloudflare D1 Database
       "restaurant_count": 150,
       "output_file": "taipei_restaurants_大安_20260129_103000.json"
     }
+  },
+  "collected_restaurants": {
+    "ChIJ...abc": {
+      "name": "某餐廳",
+      "district": "大安區",
+      "collected_at": "2026-01-29T10:00:00"
+    }
+  },
+  "api_usage": {
+    "month": "2026-01",
+    "nearby_search": 120,
+    "text_search": 48,
+    "place_details": 500,
+    "total_cost_usd": 45.50
   },
   "last_updated": "2026-01-29T10:30:00"
 }
@@ -475,20 +537,23 @@ def upload_restaurant(api_url: str, api_key: str, restaurant_data: dict):
 `export_sql` 步驟會產生以下格式的 SQL：
 
 ```sql
--- restaurants: 直接使用 sqlite3 .dump 的 INSERT 語句
-INSERT INTO restaurants VALUES(1,'餐廳名稱',...);
+-- restaurants: 使用 INSERT OR REPLACE 支援更新現有資料
+INSERT OR REPLACE INTO restaurants VALUES(1,'餐廳名稱',...);
 
 -- restaurant_tags: 使用 tag name 子查詢（解決 ID 不同步問題）
 INSERT OR IGNORE INTO restaurant_tags (restaurant_id, tag_id)
 SELECT 1, id FROM tags WHERE name = '有Wi-Fi';
 ```
 
-這樣無論遠端 D1 的 tag_id 是什麼，只要 tag name 存在就能正確建立關聯。
+- **INSERT OR REPLACE**：如果餐廳已存在（根據 PRIMARY KEY），會更新其資料
+- **tag name 子查詢**：無論遠端 D1 的 tag_id 是什麼，只要 tag name 存在就能正確建立關聯
 
 #### 可用參數
 
 | 參數 | 說明 |
 |------|------|
+| `--district <區域>` | **必填**，指定要收集的單一區域 |
+| `--force` | 強制重新收集所有餐廳（忽略已收集記錄） |
 | `--skip-collection` | 跳過資料收集，使用現有 JSON 檔案 |
 | `--preview` | 部署到 Preview 環境 (預設) |
 | `--production` | 部署到 Production 環境 |
@@ -498,20 +563,26 @@ SELECT 1, id FROM tags WHERE name = '有Wi-Fi';
 #### 使用範例
 
 ```bash
-# 完整流程：收集資料並部署到 Preview 環境
-./batch_integration.sh
+# 收集大安區的新餐廳並部署到 Preview
+./batch_integration.sh --district 大安區
 
-# 使用現有 JSON 資料部署到 Preview
-./batch_integration.sh --skip-collection
+# 強制重新收集整個區域（忽略已收集記錄）
+./batch_integration.sh --district 大安區 --force
 
-# 收集資料並部署到 Production 環境
-./batch_integration.sh --production
+# 收集信義區並部署到 Production
+./batch_integration.sh --district 信義區 --production
 
-# 只處理資料產生 SQL，不部署
-./batch_integration.sh --no-deploy
+# 只收集不部署（測試用）
+./batch_integration.sh --district 中山區 --no-deploy
 
 # 使用現有資料部署到 Production
 ./batch_integration.sh --skip-collection --production
+
+# 查看收集狀態（包含已收集餐廳數）
+python main.py --status
+
+# 重設特定區域的餐廳記錄
+python main.py --reset-restaurants 大安區
 ```
 
 #### 重要特點

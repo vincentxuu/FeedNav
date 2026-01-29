@@ -42,10 +42,13 @@ def parse_args() -> argparse.Namespace:
 範例:
   python main.py --status                    # 查看收集進度
   python main.py --districts 大安區 信義區   # 收集指定區域
+  python main.py --districts 大安區 --force  # 強制重新收集（忽略已收集記錄）
   python main.py --pending                   # 收集所有未完成的區域
   python main.py --pending --limit 2         # 收集前 2 個未完成的區域
   python main.py --reset 大安區              # 重設指定區域的進度
   python main.py --reset-all                 # 重設所有進度
+  python main.py --reset-restaurants 大安區  # 重設指定區域的餐廳收集記錄
+  python main.py --reset-restaurants-all     # 重設所有餐廳收集記錄
 
 可用區域:
   中正區, 大同區, 中山區, 松山區, 大安區, 萬華區,
@@ -75,6 +78,11 @@ def parse_args() -> argparse.Namespace:
         '--all', '-a',
         action='store_true',
         help='收集所有區域 (忽略已收集的進度)'
+    )
+    parser.add_argument(
+        '--force', '-f',
+        action='store_true',
+        help='強制重新收集所有餐廳 (忽略已收集記錄，對新舊餐廳都呼叫 Place Details API)'
     )
 
     # 搜尋類型
@@ -113,6 +121,18 @@ def parse_args() -> argparse.Namespace:
         action='store_true',
         help='重設 API 使用量統計'
     )
+    parser.add_argument(
+        '--reset-restaurants',
+        nargs='?',
+        const='__all__',
+        metavar='區域',
+        help='重設餐廳收集記錄 (不指定區域則重設全部)'
+    )
+    parser.add_argument(
+        '--reset-restaurants-all',
+        action='store_true',
+        help='重設所有餐廳收集記錄'
+    )
 
     # 輸出選項
     parser.add_argument(
@@ -138,8 +158,9 @@ def validate_districts(districts: list[str]) -> list[str]:
 async def collect_data(
     districts: list[str],
     search_types: list[str],
-    tracker: CollectionTracker
-) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    tracker: CollectionTracker,
+    force: bool = False
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
     """
     執行資料收集
 
@@ -147,29 +168,40 @@ async def collect_data(
         districts: 要收集的區域列表
         search_types: 搜尋類型列表
         tracker: 進度追蹤器
+        force: 是否強制重新收集所有餐廳
 
     Returns:
-        (餐廳資料列表, API 使用量摘要)
+        (收集結果字典, API 使用量摘要)
+        收集結果字典包含: restaurants, is_update_mode, new_count, updated_count, collected_restaurants
     """
     api_key = os.getenv('GOOGLE_MAPS_API_KEY')
     if not api_key:
         logger.error("環境變數 GOOGLE_MAPS_API_KEY 未設定")
-        return [], None
+        return {'restaurants': [], 'is_update_mode': False, 'new_count': 0, 'updated_count': 0, 'collected_restaurants': []}, None
 
     pipeline = DataCollectionPipeline(api_key)
 
+    # 取得已收集的 place_id
+    collected_place_ids = tracker.get_collected_place_ids()
+
     logger.info(f"開始收集區域: {', '.join(districts)}")
     logger.info(f"搜尋類型: {', '.join(search_types)}")
+    if force:
+        logger.info("強制模式：重新收集所有餐廳")
+    else:
+        logger.info(f"已追蹤餐廳: {len(collected_place_ids)} 家")
 
-    results = await pipeline.batch_collect_taipei_restaurants(
+    result = await pipeline.batch_collect_taipei_restaurants(
         districts=districts,
-        search_types=search_types
+        search_types=search_types,
+        collected_place_ids=collected_place_ids,
+        force=force
     )
 
     # 取得 API 使用量摘要
     api_usage = pipeline.quota_tracker.get_usage_summary()
 
-    return results, api_usage
+    return result, api_usage
 
 
 def save_results(
@@ -239,6 +271,22 @@ async def main() -> int:
         print("已重設 API 使用量統計")
         return 0
 
+    # 處理重設餐廳收集記錄
+    if args.reset_restaurants_all:
+        count = tracker.reset_restaurants(None)
+        print(f"已重設所有餐廳收集記錄 ({count} 家)")
+        return 0
+
+    if args.reset_restaurants:
+        if args.reset_restaurants == '__all__':
+            count = tracker.reset_restaurants(None)
+            print(f"已重設所有餐廳收集記錄 ({count} 家)")
+        else:
+            validate_districts([args.reset_restaurants])
+            count = tracker.reset_restaurants(args.reset_restaurants)
+            print(f"已重設 {args.reset_restaurants} 的餐廳收集記錄 ({count} 家)")
+        return 0
+
     # 處理重設
     if args.reset_all:
         tracker.reset()
@@ -275,20 +323,32 @@ async def main() -> int:
         tracker.print_status()
         return 0
 
-    print(f"\n準備收集 {len(districts)} 個區域: {', '.join(districts)}\n")
+    print(f"\n準備收集 {len(districts)} 個區域: {', '.join(districts)}")
+    if args.force:
+        print("模式: 強制重新收集所有餐廳\n")
+    else:
+        print("模式: 智慧增量收集\n")
 
     try:
-        results, api_usage = await collect_data(districts, args.types, tracker)
+        collect_result, api_usage = await collect_data(
+            districts, args.types, tracker, force=args.force
+        )
 
-        if not results:
+        restaurants = collect_result['restaurants']
+        is_update_mode = collect_result['is_update_mode']
+        new_count = collect_result['new_count']
+        updated_count = collect_result['updated_count']
+        collected_restaurants = collect_result['collected_restaurants']
+
+        if not restaurants:
             logger.warning("未收集到任何餐廳資料")
             return 1
 
-        output_path = save_results(results, districts, args.output)
+        output_path = save_results(restaurants, districts, args.output)
 
         # 更新追蹤進度 - 按區域統計
         district_counts: dict[str, int] = {}
-        for restaurant in results:
+        for restaurant in restaurants:
             district = restaurant.get('district', '未知')
             district_counts[district] = district_counts.get(district, 0) + 1
 
@@ -296,11 +356,31 @@ async def main() -> int:
             count = district_counts.get(district, 0)
             tracker.mark_collected(district, count, str(output_path))
 
+        # 更新餐廳追蹤記錄
+        restaurants_to_track = [
+            {
+                'place_id': r.get('place_id', ''),
+                'name': r.get('name', ''),
+                'district': r.get('district', '')
+            }
+            for r in restaurants
+            if r.get('place_id')
+        ]
+        if restaurants_to_track:
+            tracker.mark_restaurants_collected_batch(restaurants_to_track)
+
         # 更新累計 API 使用量
         if api_usage:
             tracker.update_api_usage(api_usage)
 
-        logger.info(f"收集完成。共 {len(results)} 家餐廳，已儲存至 {output_path}")
+        # 輸出收集結果摘要
+        if args.force:
+            logger.info(f"強制收集完成。共 {len(restaurants)} 家餐廳，已儲存至 {output_path}")
+        elif is_update_mode:
+            logger.info(f"更新完成。更新 {updated_count} 家舊餐廳，已儲存至 {output_path}")
+        else:
+            logger.info(f"收集完成。新增 {new_count} 家新餐廳，已儲存至 {output_path}")
+
         tracker.print_status()
         tracker.print_api_usage()
 

@@ -13,6 +13,7 @@ import RestaurantDetailSkeleton from '@/components/restaurant/RestaurantDetailSk
 import RestaurantNotFound from '@/components/restaurant/RestaurantNotFound'
 import { useRestaurantDetail } from '@/hooks/useRestaurantDetail'
 import { useState, use } from 'react'
+import { getPhotoUrl } from '@/lib/utils'
 
 interface RestaurantDetailPageProps {
   params: Promise<{ id: string }>
@@ -76,21 +77,27 @@ export default function RestaurantDetailPage({ params }: RestaurantDetailPagePro
       <main className="container pb-16">
         <div className="mx-auto max-w-3xl">
           <div className="mb-8 h-64 w-full overflow-hidden rounded-lg bg-muted shadow-lg md:h-80">
-            {imageError ? (
-              <div className="flex h-full w-full items-center justify-center">
-                <ImageOff className="h-16 w-16 text-muted-foreground" />
-              </div>
-            ) : (
-              <Image
-                src={restaurant.photos?.[0] || '/placeholder.svg'}
-                alt={restaurant.name}
-                width={800}
-                height={320}
-                className="h-full w-full object-cover"
-                onError={handleImageError}
-                unoptimized
-              />
-            )}
+            {(() => {
+              const photoUrl = getPhotoUrl(restaurant.photos?.[0])
+              if (imageError || !photoUrl) {
+                return (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <ImageOff className="h-16 w-16 text-muted-foreground" />
+                  </div>
+                )
+              }
+              return (
+                <Image
+                  src={photoUrl}
+                  alt={restaurant.name}
+                  width={800}
+                  height={320}
+                  className="h-full w-full object-cover"
+                  onError={handleImageError}
+                  unoptimized
+                />
+              )
+            })()}
           </div>
 
           <div className="mb-8">

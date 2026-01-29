@@ -25,6 +25,14 @@ export interface RestaurantTag {
   is_positive: boolean
 }
 
+// 餐廳照片類型
+export interface RestaurantPhoto {
+  photo_reference?: string
+  url?: string
+  width?: number
+  height?: number
+}
+
 // 餐廳類型
 export interface Restaurant {
   id: string
@@ -33,7 +41,7 @@ export interface Restaurant {
   cuisine_type: string
   rating: number
   price_level: number
-  photos: string[]
+  photos: (RestaurantPhoto | string)[]
   tags: RestaurantTag[]
   // 用於追蹤收藏狀態
   is_favorited?: boolean

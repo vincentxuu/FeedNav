@@ -19,21 +19,24 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 日誌函數
+# 有效的台北市行政區
+VALID_DISTRICTS=("中正區" "大同區" "中山區" "松山區" "大安區" "萬華區" "信義區" "士林區" "北投區" "內湖區" "南港區" "文山區")
+
+# 日誌函數（輸出到 stderr，避免被變數捕獲）
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}[INFO]${NC} $1" >&2
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    echo -e "${GREEN}[SUCCESS]${NC} $1" >&2
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${YELLOW}[WARNING]${NC} $1" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
 # 檢查必要檔案和目錄
@@ -61,26 +64,67 @@ check_prerequisites() {
         exit 1
     fi
 
-    # 檢查 Python 依賴
     cd "$DATAFETCHER_DIR"
-    if ! python -c "import googlemaps, geopy" 2>/dev/null; then
+
+    # 啟用虛擬環境（如果存在）
+    if [ -f "$DATAFETCHER_DIR/.venv/bin/activate" ]; then
+        log_info "啟用虛擬環境..."
+        source "$DATAFETCHER_DIR/.venv/bin/activate"
+    elif [ ! -d "$DATAFETCHER_DIR/.venv" ]; then
+        log_warning "虛擬環境不存在，建立中..."
+        uv venv
+        source "$DATAFETCHER_DIR/.venv/bin/activate"
+    fi
+
+    # 檢查 Python 依賴
+    if ! python3 -c "import googlemaps, geopy, dotenv" 2>/dev/null; then
         log_warning "缺少 Python 依賴，嘗試安裝..."
-        pip install -r requirements.txt
+        uv pip install -r requirements.txt
     fi
 
     log_success "環境檢查完成"
 }
 
+# 驗證區域名稱
+validate_district() {
+    local district="$1"
+    for valid in "${VALID_DISTRICTS[@]}"; do
+        if [ "$district" = "$valid" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 # 執行資料收集
+# 參數: $1 = district (必填)
+#       $2 = force (可選，"true" 表示強制重新收集)
 collect_data() {
+    local district="$1"
+    local force="$2"
+
     log_info "開始收集餐廳資料..."
+    log_info "區域: $district"
 
     cd "$DATAFETCHER_DIR"
 
-    # 執行資料收集，收集所有未完成的區域
-    # --pending: 只收集未完成的區域
-    # 設定 30 分鐘逾時
-    timeout 1800 python main.py --pending || {
+    # 建構收集命令
+    local cmd="python3 main.py --districts $district"
+    if [ "$force" = "true" ]; then
+        cmd="$cmd --force"
+        log_info "模式: 強制重新收集"
+    else
+        log_info "模式: 智慧增量收集"
+    fi
+
+    # 執行收集命令（macOS 沒有 timeout，使用 gtimeout 或直接執行）
+    if command -v timeout &> /dev/null; then
+        timeout 1800 $cmd
+    elif command -v gtimeout &> /dev/null; then
+        gtimeout 1800 $cmd
+    else
+        $cmd
+    fi || {
         log_error "資料收集失敗或逾時"
         exit 1
     }
@@ -114,8 +158,15 @@ integrate_data() {
     # 清理舊的臨時檔案
     rm -f "$TEMP_DB" "$TEMP_SQL"
 
+    # 初始化資料庫 schema
+    log_info "初始化資料庫結構..."
+    sqlite3 "$TEMP_DB" < "$SERVERLESS_DIR/schema.sql" || {
+        log_error "資料庫初始化失敗"
+        exit 1
+    }
+
     # 執行資料整合到臨時 SQLite
-    python integrate_data.py "$json_file" "$TEMP_DB" || {
+    python3 integrate_data.py "$json_file" "$TEMP_DB" || {
         log_error "資料整合失敗"
         exit 1
     }
@@ -135,9 +186,9 @@ export_sql() {
     # 清空輸出檔案
     > "$TEMP_SQL"
 
-    # 1. 匯出 restaurants（直接使用 .dump 的 INSERT 語句）
+    # 1. 匯出 restaurants（使用 INSERT OR REPLACE 支援更新現有資料）
     log_info "匯出餐廳資料..."
-    sqlite3 "$TEMP_DB" .dump | grep "^INSERT INTO restaurants " >> "$TEMP_SQL"
+    sqlite3 "$TEMP_DB" .dump | grep "^INSERT INTO restaurants " | sed 's/^INSERT INTO restaurants /INSERT OR REPLACE INTO restaurants /' >> "$TEMP_SQL"
 
     # 2. 匯出 restaurant_tags，使用 tag name 子查詢（解決 tag_id 不同步問題）
     # 格式：INSERT OR IGNORE INTO restaurant_tags ... SELECT ... FROM tags WHERE name = '...';
@@ -152,8 +203,8 @@ export_sql() {
     " >> "$TEMP_SQL"
 
     # 統計匯出的資料筆數
-    local restaurant_count=$(grep -c "^INSERT INTO restaurants" "$TEMP_SQL" 2>/dev/null || echo "0")
-    local tag_relation_count=$(grep -c "^INSERT INTO restaurant_tags" "$TEMP_SQL" 2>/dev/null || echo "0")
+    local restaurant_count=$(grep -c "^INSERT OR REPLACE INTO restaurants" "$TEMP_SQL" 2>/dev/null || echo "0")
+    local tag_relation_count=$(grep -c "^INSERT OR IGNORE INTO restaurant_tags" "$TEMP_SQL" 2>/dev/null || echo "0")
 
     log_success "SQL 匯出完成: $TEMP_SQL"
     log_info "  餐廳: $restaurant_count 筆, 標籤關聯: $tag_relation_count 筆"
@@ -226,9 +277,13 @@ cleanup() {
 
 # 顯示使用說明
 show_usage() {
-    echo "使用方式: $0 [選項]"
+    echo "使用方式: $0 --district <區域> [選項]"
+    echo ""
+    echo "必填參數:"
+    echo "  --district <區域>    指定要收集的單一區域"
     echo ""
     echo "選項:"
+    echo "  --force              強制重新收集所有餐廳 (忽略已收集記錄)"
     echo "  --skip-collection    跳過資料收集，使用現有 JSON 檔案"
     echo "  --preview            部署到 Preview 環境 (預設)"
     echo "  --production         部署到 Production 環境"
@@ -236,9 +291,22 @@ show_usage() {
     echo "  --help               顯示此說明"
     echo ""
     echo "範例:"
-    echo "  $0                        # 收集資料並部署到 Preview"
-    echo "  $0 --skip-collection      # 使用現有資料部署到 Preview"
-    echo "  $0 --production           # 收集資料並部署到 Production"
+    echo "  $0 --district 大安區                    # 收集大安區的新餐廳並部署到 Preview"
+    echo "  $0 --district 大安區 --force            # 強制重新收集整個區域"
+    echo "  $0 --district 信義區 --production       # 收集信義區並部署到 Production"
+    echo "  $0 --district 中山區 --no-deploy        # 只收集不部署（測試用）"
+    echo "  $0 --skip-collection --production       # 使用現有 JSON 部署到 Production"
+    echo ""
+    echo "查看收集狀態:"
+    echo "  python3 main.py --status                # 查看收集狀態（包含已收集餐廳數）"
+    echo ""
+    echo "重設餐廳記錄:"
+    echo "  python3 main.py --reset-restaurants 大安區  # 重設指定區域的餐廳記錄"
+    echo "  python3 main.py --reset-restaurants         # 重設所有餐廳記錄"
+    echo ""
+    echo "台北市 12 個有效區域："
+    echo "  中正區, 大同區, 中山區, 松山區, 大安區, 萬華區,"
+    echo "  信義區, 士林區, 北投區, 內湖區, 南港區, 文山區"
 }
 
 # 主要執行流程
@@ -246,10 +314,24 @@ main() {
     local skip_collection=false
     local deploy_env="preview"
     local do_deploy=true
+    local district=""
+    local force=false
 
     # 解析參數
     while [[ $# -gt 0 ]]; do
         case $1 in
+            --district)
+                district="$2"
+                if [ -z "$district" ]; then
+                    log_error "--district 需要指定一個區域"
+                    exit 1
+                fi
+                shift 2
+                ;;
+            --force)
+                force=true
+                shift
+                ;;
             --skip-collection)
                 skip_collection=true
                 shift
@@ -278,14 +360,36 @@ main() {
         esac
     done
 
+    # 檢查必填參數（除非跳過收集）
+    if [ "$skip_collection" != "true" ] && [ -z "$district" ]; then
+        log_error "必須指定 --district <區域> 或使用 --skip-collection"
+        echo ""
+        show_usage
+        exit 1
+    fi
+
+    # 驗證區域名稱
+    if [ -n "$district" ] && ! validate_district "$district"; then
+        log_error "無效的區域名稱: $district"
+        echo ""
+        echo "有效區域: ${VALID_DISTRICTS[*]}"
+        exit 1
+    fi
+
     log_info "開始 FeedNav 批次資料整合..."
     log_info "時間: $(date)"
     log_info "部署環境: $deploy_env"
+    [ -n "$district" ] && log_info "收集區域: $district"
+    [ "$force" = "true" ] && log_info "收集模式: 強制重新收集"
 
     check_prerequisites
 
     if [ "$skip_collection" != "true" ]; then
-        collect_data
+        if [ "$force" = "true" ]; then
+            collect_data "$district" "true"
+        else
+            collect_data "$district"
+        fi
     else
         log_info "跳過資料收集"
     fi

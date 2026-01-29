@@ -13,6 +13,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { getPhotoUrl } from '@/lib/utils'
 
 interface RestaurantCardProps {
   restaurant: Restaurant & { distance?: number }
@@ -116,21 +117,27 @@ const RestaurantCard = ({
     >
       <Card className="flex h-full w-full flex-col overflow-hidden transition-all duration-300 group-hover:-translate-y-1 group-hover:scale-[1.02] group-hover:shadow-xl">
         <div className="relative">
-          {imageError ? (
-            <div className="flex h-40 w-full items-center justify-center bg-muted">
-              <ImageOff className="h-10 w-10 text-muted-foreground" />
-            </div>
-          ) : (
-            <Image
-              src={restaurant.photos?.[0] || '/placeholder.svg'}
-              alt={restaurant.name}
-              width={400}
-              height={160}
-              className="h-40 w-full object-cover"
-              onError={handleImageError}
-              unoptimized
-            />
-          )}
+          {(() => {
+            const photoUrl = getPhotoUrl(restaurant.photos?.[0])
+            if (imageError || !photoUrl) {
+              return (
+                <div className="flex h-40 w-full items-center justify-center bg-muted">
+                  <ImageOff className="h-10 w-10 text-muted-foreground" />
+                </div>
+              )
+            }
+            return (
+              <Image
+                src={photoUrl}
+                alt={restaurant.name}
+                width={400}
+                height={160}
+                className="h-40 w-full object-cover"
+                onError={handleImageError}
+                unoptimized
+              />
+            )
+          })()}
           <div className="absolute right-2 top-2">
             {session ? (
               favoriteButton

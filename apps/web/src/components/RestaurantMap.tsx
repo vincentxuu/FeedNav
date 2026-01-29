@@ -36,13 +36,18 @@ const RestaurantMapComponent: React.FC<RestaurantMapProps> = ({
 
     if (typeof window !== 'undefined') {
       // Dynamically import Leaflet and its dependencies on client side
-      Promise.all([
-        import('leaflet'),
-        import('leaflet/dist/leaflet.css'),
-        import('leaflet.markercluster/dist/MarkerCluster.css'),
-        import('leaflet.markercluster/dist/MarkerCluster.Default.css'),
-        import('leaflet.markercluster'),
-      ]).then(async ([leaflet]) => {
+      const loadLeaflet = async () => {
+        // First, import leaflet and CSS files
+        const [leaflet] = await Promise.all([
+          import('leaflet'),
+          import('leaflet/dist/leaflet.css'),
+          import('leaflet.markercluster/dist/MarkerCluster.css'),
+          import('leaflet.markercluster/dist/MarkerCluster.Default.css'),
+        ])
+
+        // Import markercluster AFTER leaflet to ensure it extends the correct instance
+        await import('leaflet.markercluster')
+
         // Import icons
         const icon = (await import('leaflet/dist/images/marker-icon.png')).default
         const iconShadow = (await import('leaflet/dist/images/marker-shadow.png')).default
@@ -58,7 +63,9 @@ const RestaurantMapComponent: React.FC<RestaurantMapProps> = ({
         })
 
         setL(leaflet)
-      })
+      }
+
+      loadLeaflet()
     }
   }, [])
 
