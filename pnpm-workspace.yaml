@@ -1,0 +1,5 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'feednav-serverless'
+  - 'feednav-data-fetcher'
