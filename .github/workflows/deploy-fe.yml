@@ -85,6 +85,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Create .env for OpenNext build
+        run: |
+          echo 'WRANGLER_BUILD_CONDITIONS=""' >> apps/web/.env
+          echo 'WRANGLER_BUILD_PLATFORM=node' >> apps/web/.env
+
       - name: Build for Preview
         run: pnpm --filter @feednav/web exec opennextjs-cloudflare build
         env:
@@ -128,6 +133,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Create .env for OpenNext build
+        run: |
+          echo 'WRANGLER_BUILD_CONDITIONS=""' >> apps/web/.env
+          echo 'WRANGLER_BUILD_PLATFORM=node' >> apps/web/.env
 
       - name: Build & Deploy to Production
         run: pnpm --filter @feednav/web run deploy
