@@ -107,12 +107,12 @@ export class RestaurantRepository {
       params.push(searchTerm, searchTerm, searchTerm)
     }
 
-    if (filters.district) {
+    if (filters.district && filters.district !== 'all') {
       query += ` AND r.district = ?`
       params.push(filters.district)
     }
 
-    if (filters.cuisine) {
+    if (filters.cuisine && filters.cuisine !== 'all') {
       query += ` AND r.cuisine_type = ?`
       params.push(filters.cuisine)
     }
@@ -178,12 +178,12 @@ export class RestaurantRepository {
       countParams.push(searchTerm, searchTerm, searchTerm)
     }
 
-    if (filters.district) {
+    if (filters.district && filters.district !== 'all') {
       countQuery += ` AND r.district = ?`
       countParams.push(filters.district)
     }
 
-    if (filters.cuisine) {
+    if (filters.cuisine && filters.cuisine !== 'all') {
       countQuery += ` AND r.cuisine_type = ?`
       countParams.push(filters.cuisine)
     }
