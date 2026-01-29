@@ -45,7 +45,11 @@ const RestaurantMapComponent: React.FC<RestaurantMapProps> = ({
           import('leaflet.markercluster/dist/MarkerCluster.Default.css'),
         ])
 
-        // Import markercluster AFTER leaflet to ensure it extends the correct instance
+        // Make Leaflet available globally so markercluster can attach to it
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(window as any).L = leaflet
+
+        // Import markercluster AFTER leaflet is globally available
         await import('leaflet.markercluster')
 
         // Import icons
