@@ -80,9 +80,9 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
           <span className="font-semibold text-foreground">{restaurant.rating.toFixed(1)}</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {restaurant.tags.map((tag) => (
-            <Badge key={tag} variant="secondary">
-              {tag}
+          {restaurant.tags?.map((tag) => (
+            <Badge key={tag.id || tag.name} variant="secondary">
+              {tag.name}
             </Badge>
           ))}
         </div>

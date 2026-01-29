@@ -84,7 +84,7 @@ export const CuratedSections = ({
 
   const michelinRestaurants = useMemo(() => {
     if (!enrichedRestaurants) return []
-    return enrichedRestaurants.filter((r) => r.tags.some((tag) => tag.includes('米其林')))
+    return enrichedRestaurants.filter((r) => r.tags?.some((tag) => tag.name?.includes('米其林')))
   }, [enrichedRestaurants])
 
   if (!restaurants || restaurants.length === 0) {

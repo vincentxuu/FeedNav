@@ -174,22 +174,22 @@ const RestaurantCard = ({
           <div className="mt-2 min-h-[52px]">
             {/* Expanded view on hover */}
             <div className="hidden flex-wrap gap-1 group-hover:flex">
-              {restaurant.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="px-1.5 py-0.5 text-xs font-normal">
-                  {tag}
+              {restaurant.tags?.map((tag) => (
+                <Badge key={tag.id || tag.name} variant="secondary" className="px-1.5 py-0.5 text-xs font-normal">
+                  {tag.name}
                 </Badge>
               ))}
             </div>
             {/* Collapsed view by default */}
             <div className="flex flex-wrap gap-1 group-hover:hidden">
-              {restaurant.tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} variant="secondary" className="px-1.5 py-0.5 text-xs font-normal">
-                  {tag}
+              {restaurant.tags?.slice(0, 3).map((tag) => (
+                <Badge key={tag.id || tag.name} variant="secondary" className="px-1.5 py-0.5 text-xs font-normal">
+                  {tag.name}
                 </Badge>
               ))}
-              {restaurant.tags.length > 3 && (
+              {(restaurant.tags?.length ?? 0) > 3 && (
                 <Badge variant="outline" className="px-1.5 py-0.5 text-xs font-normal">
-                  +{restaurant.tags.length - 3}
+                  +{restaurant.tags!.length - 3}
                 </Badge>
               )}
             </div>

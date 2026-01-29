@@ -34,7 +34,7 @@ export interface Restaurant {
   rating: number
   price_level: number
   image_url: string
-  tags: string[]
+  tags: RestaurantTag[]
   // 用於追蹤收藏狀態
   is_favorited?: boolean
   is_visited?: boolean
