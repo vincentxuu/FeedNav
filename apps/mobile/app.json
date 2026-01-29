@@ -16,8 +16,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "cc.feednav.app",
+      "associatedDomains": ["applinks:feednav.cc"],
       "config": {
         "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "我們需要您的位置來搜尋附近的餐廳",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "我們需要您的位置來搜尋附近的餐廳",
+        "NSCameraUsageDescription": "需要相機權限來拍攝個人頭像",
+        "NSPhotoLibraryUsageDescription": "需要相簿權限來選擇個人頭像"
       }
     },
     "android": {
@@ -26,11 +33,39 @@
         "backgroundColor": "#f97316"
       },
       "package": "cc.feednav.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "feednav.cc",
+              "pathPrefix": "/restaurant"
+            },
+            {
+              "scheme": "https",
+              "host": "feednav.cc",
+              "pathPrefix": "/map"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
         }
-      }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -40,7 +75,22 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-location"
+      "expo-location",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#f97316",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "需要相簿權限來選擇個人頭像",
+          "cameraPermission": "需要相機權限來拍攝個人頭像"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -52,6 +102,12 @@
       "eas": {
         "projectId": "your-project-id"
       }
+    },
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#f97316",
+      "androidMode": "default",
+      "androidCollapsedTitle": "FeedNav"
     }
   }
 }
