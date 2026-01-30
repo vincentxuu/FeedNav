@@ -285,7 +285,7 @@ class ApiClient {
   }
 
   async getRestaurant(id: string) {
-    return this.request<Restaurant>(API_ENDPOINTS.RESTAURANTS.DETAIL(id))
+    return this.request<{ restaurant: Restaurant }>(API_ENDPOINTS.RESTAURANTS.DETAIL(id))
   }
 
   async getNearbyRestaurants(lat: number, lng: number, radius = 5, limit = 10) {

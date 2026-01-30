@@ -9,23 +9,37 @@ import { useToast } from '@/hooks/use-toast'
 import { fetchRestaurants } from '@/queries/restaurants'
 import { getSimilarRestaurants } from '@/lib/recommendations'
 import { useVisitedRestaurants } from '@/hooks/useVisitedRestaurants'
+import { apiClient } from '@/lib/api-client'
 
 export const useRestaurantDetail = (id: string) => {
   const { toast } = useToast()
   const { session, user } = useAuthSession()
 
+  // Fetch single restaurant by ID
   const {
-    data: restaurants,
-    isLoading,
-    error,
-  } = useQuery<Restaurant[]>({
+    data: restaurantData,
+    isLoading: isLoadingRestaurant,
+    error: restaurantError,
+  } = useQuery({
+    queryKey: ['restaurant', id],
+    queryFn: async () => {
+      const response = await apiClient.getRestaurant(id)
+      if (!response.success || !response.data) {
+        throw new Error('Restaurant not found')
+      }
+      return response.data
+    },
+  })
+
+  // Fetch all restaurants for similar recommendations
+  const { data: restaurants } = useQuery<Restaurant[]>({
     queryKey: ['restaurants'],
     queryFn: () => fetchRestaurants(),
   })
 
-  const restaurant = useMemo(() => {
-    return restaurants?.find((r) => r.id === id)
-  }, [restaurants, id])
+  const restaurant = restaurantData?.restaurant as Restaurant | undefined
+  const isLoading = isLoadingRestaurant
+  const error = restaurantError
 
   const { favorites, addFavorite, removeFavorite, isMutating } = useFavorites(user?.id)
   const {
