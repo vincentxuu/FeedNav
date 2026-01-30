@@ -267,6 +267,52 @@ export class RestaurantRepository {
     const result = await this.db.prepare('SELECT 1 FROM restaurants WHERE id = ?').bind(id).first()
     return !!result
   }
+
+  async getByBounds(
+    minLat: number,
+    maxLat: number,
+    minLng: number,
+    maxLng: number,
+    limit: number,
+    userId?: string
+  ): Promise<RestaurantRow[]> {
+    let query = `
+      SELECT
+        r.*,
+        GROUP_CONCAT(t.id || ':' || t.name || ':' || COALESCE(t.category, '') || ':' || COALESCE(t.color, '') || ':' || t.is_positive) as tags_data
+    `
+
+    const params: (string | number)[] = []
+
+    if (userId) {
+      query += `,
+        EXISTS(SELECT 1 FROM user_favorites WHERE user_id = ? AND restaurant_id = r.id) as is_favorited,
+        EXISTS(SELECT 1 FROM user_visited_restaurants WHERE user_id = ? AND restaurant_id = r.id) as is_visited
+      `
+      params.push(userId, userId)
+    }
+
+    query += `
+      FROM restaurants r
+      LEFT JOIN restaurant_tags rt ON r.id = rt.restaurant_id
+      LEFT JOIN tags t ON rt.tag_id = t.id
+      WHERE r.latitude IS NOT NULL
+        AND r.longitude IS NOT NULL
+        AND r.latitude BETWEEN ? AND ?
+        AND r.longitude BETWEEN ? AND ?
+      GROUP BY r.id
+      ORDER BY r.rating DESC NULLS LAST, r.id
+      LIMIT ?
+    `
+
+    params.push(minLat, maxLat, minLng, maxLng, limit)
+
+    const result = await this.db
+      .prepare(query)
+      .bind(...params)
+      .all<RestaurantRow>()
+    return result.results
+  }
 }
 
 export function createRestaurantRepository(env: Env): RestaurantRepository {

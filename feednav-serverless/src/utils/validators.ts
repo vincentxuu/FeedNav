@@ -41,3 +41,11 @@ export const reviewSchema = z.object({
   rating: z.number().min(1).max(5),
   comment: z.string().max(1000).optional(),
 })
+
+export const boundsSchema = z.object({
+  minLat: z.number().min(-90).max(90),
+  maxLat: z.number().min(-90).max(90),
+  minLng: z.number().min(-180).max(180),
+  maxLng: z.number().min(-180).max(180),
+  limit: z.number().int().positive().max(500).default(200),
+})
