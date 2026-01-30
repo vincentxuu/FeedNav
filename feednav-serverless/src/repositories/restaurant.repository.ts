@@ -301,7 +301,7 @@ export class RestaurantRepository {
         AND r.latitude BETWEEN ? AND ?
         AND r.longitude BETWEEN ? AND ?
       GROUP BY r.id
-      ORDER BY r.rating DESC NULLS LAST, r.id
+      ORDER BY COALESCE(r.rating, 0) DESC, r.id
       LIMIT ?
     `
 

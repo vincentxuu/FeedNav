@@ -37,17 +37,20 @@ const RestaurantMapComponent: React.FC<RestaurantMapProps> = ({
   const [L, setL] = useState<typeof LeafletType | null>(null)
   const initialBoundsEmitted = useRef(false)
 
+  const onBoundsChangeRef = useRef(onBoundsChange)
+  onBoundsChangeRef.current = onBoundsChange
+
   const emitBoundsChange = useCallback(() => {
-    if (!map.current || !onBoundsChange) return
+    if (!map.current || !onBoundsChangeRef.current) return
 
     const bounds = map.current.getBounds()
-    onBoundsChange({
+    onBoundsChangeRef.current({
       minLat: bounds.getSouth(),
       maxLat: bounds.getNorth(),
       minLng: bounds.getWest(),
       maxLng: bounds.getEast(),
     })
-  }, [onBoundsChange])
+  }, [])
 
   useEffect(() => {
     setMounted(true)
@@ -119,7 +122,7 @@ const RestaurantMapComponent: React.FC<RestaurantMapProps> = ({
         markers.current = null
       }
     }
-  }, [mounted, L, emitBoundsChange, onBoundsChange])
+  }, [mounted, L, emitBoundsChange])
 
   useEffect(() => {
     if (!mounted || !L || !map.current || !markers.current) return

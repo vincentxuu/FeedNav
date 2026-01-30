@@ -62,7 +62,6 @@ export default function MapPage() {
   // Fetch restaurants based on map bounds
   const {
     data: restaurantsFromDB = [],
-    isLoading: isLoadingRestaurants,
     isFetching,
   } = useQuery<Restaurant[]>({
     queryKey: ['restaurants-bounds', debouncedBounds],
