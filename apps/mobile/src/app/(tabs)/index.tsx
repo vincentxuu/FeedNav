@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, memo } from 'react'
-import { FlatList, RefreshControl } from 'react-native'
+import { FlatList, RefreshControl, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { YStack, XStack, Text } from 'tamagui'
@@ -142,60 +142,66 @@ export default function HomeScreen() {
             </Button>
           </XStack>
 
-          {/* Active Filters */}
+          {/* Active Filters - 橫向滾動 */}
           {activeFilterCount > 0 && (
-            <XStack gap="$2" flexWrap="wrap">
-              {filters.district && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8 }}
+            >
+              <XStack gap="$2">
+                {filters.district && (
+                  <Badge
+                    variant="primary"
+                    size="md"
+                    pressStyle={{ opacity: 0.7 }}
+                    onPress={() => clearFilter('district')}
+                  >
+                    {filters.district} <X size={12} />
+                  </Badge>
+                )}
+                {filters.cuisine && (
+                  <Badge
+                    variant="primary"
+                    size="md"
+                    pressStyle={{ opacity: 0.7 }}
+                    onPress={() => clearFilter('cuisine')}
+                  >
+                    {filters.cuisine} <X size={12} />
+                  </Badge>
+                )}
+                {filters.priceRange && (
+                  <Badge
+                    variant="primary"
+                    size="md"
+                    pressStyle={{ opacity: 0.7 }}
+                    onPress={() => clearFilter('priceRange')}
+                  >
+                    {'$'.repeat(filters.priceRange[0])}-{'$'.repeat(filters.priceRange[1])}{' '}
+                    <X size={12} />
+                  </Badge>
+                )}
+                {filters.tags?.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="primary"
+                    size="md"
+                    pressStyle={{ opacity: 0.7 }}
+                    onPress={() => clearFilter('tags', tag)}
+                  >
+                    {tag} <X size={12} />
+                  </Badge>
+                ))}
                 <Badge
-                  variant="primary"
+                  variant="outline"
                   size="md"
                   pressStyle={{ opacity: 0.7 }}
-                  onPress={() => clearFilter('district')}
+                  onPress={clearAllFilters}
                 >
-                  {filters.district} <X size={12} />
+                  清除全部
                 </Badge>
-              )}
-              {filters.cuisine && (
-                <Badge
-                  variant="primary"
-                  size="md"
-                  pressStyle={{ opacity: 0.7 }}
-                  onPress={() => clearFilter('cuisine')}
-                >
-                  {filters.cuisine} <X size={12} />
-                </Badge>
-              )}
-              {filters.priceRange && (
-                <Badge
-                  variant="primary"
-                  size="md"
-                  pressStyle={{ opacity: 0.7 }}
-                  onPress={() => clearFilter('priceRange')}
-                >
-                  {'$'.repeat(filters.priceRange[0])}-{'$'.repeat(filters.priceRange[1])}{' '}
-                  <X size={12} />
-                </Badge>
-              )}
-              {filters.tags?.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="primary"
-                  size="md"
-                  pressStyle={{ opacity: 0.7 }}
-                  onPress={() => clearFilter('tags', tag)}
-                >
-                  {tag} <X size={12} />
-                </Badge>
-              ))}
-              <Badge
-                variant="outline"
-                size="md"
-                pressStyle={{ opacity: 0.7 }}
-                onPress={clearAllFilters}
-              >
-                清除全部
-              </Badge>
-            </XStack>
+              </XStack>
+            </ScrollView>
           )}
         </YStack>
 
