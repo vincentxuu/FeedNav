@@ -99,9 +99,11 @@ validate_district() {
 # 執行資料收集
 # 參數: $1 = district (必填)
 #       $2 = force (可選，"true" 表示強制重新收集)
+#       $3 = types (可選，搜尋類型，空格分隔)
 collect_data() {
     local district="$1"
     local force="$2"
+    local types="$3"
 
     log_info "開始收集餐廳資料..."
     log_info "區域: $district"
@@ -115,6 +117,12 @@ collect_data() {
         log_info "模式: 強制重新收集"
     else
         log_info "模式: 智慧增量收集"
+    fi
+
+    # 加入搜尋類型
+    if [ -n "$types" ]; then
+        cmd="$cmd --types $types"
+        log_info "搜尋類型: $types"
     fi
 
     # 執行收集命令（macOS 沒有 timeout，使用 gtimeout 或直接執行）
@@ -283,6 +291,9 @@ show_usage() {
     echo "  --district <區域>    指定要收集的單一區域"
     echo ""
     echo "選項:"
+    echo "  --types <類型...>    指定搜尋類型 (用引號包住多個類型)"
+    echo "                       可用: restaurant, dessert, cafe, healthy,"
+    echo "                             bar, meal_delivery, meal_takeaway, food"
     echo "  --force              強制重新收集所有餐廳 (忽略已收集記錄)"
     echo "  --skip-collection    跳過資料收集，使用現有 JSON 檔案"
     echo "  --preview            部署到 Preview 環境 (預設)"
@@ -293,6 +304,7 @@ show_usage() {
     echo "範例:"
     echo "  $0 --district 大安區                    # 收集大安區的新餐廳並部署到 Preview"
     echo "  $0 --district 大安區 --force            # 強制重新收集整個區域"
+    echo "  $0 --district 大安區 --types \"bar cafe\" # 收集大安區的酒吧和咖啡廳"
     echo "  $0 --district 信義區 --production       # 收集信義區並部署到 Production"
     echo "  $0 --district 中山區 --no-deploy        # 只收集不部署（測試用）"
     echo "  $0 --skip-collection --production       # 使用現有 JSON 部署到 Production"
@@ -316,6 +328,7 @@ main() {
     local do_deploy=true
     local district=""
     local force=false
+    local types=""
 
     # 解析參數
     while [[ $# -gt 0 ]]; do
@@ -324,6 +337,14 @@ main() {
                 district="$2"
                 if [ -z "$district" ]; then
                     log_error "--district 需要指定一個區域"
+                    exit 1
+                fi
+                shift 2
+                ;;
+            --types)
+                types="$2"
+                if [ -z "$types" ]; then
+                    log_error "--types 需要指定搜尋類型"
                     exit 1
                 fi
                 shift 2
@@ -380,15 +401,16 @@ main() {
     log_info "時間: $(date)"
     log_info "部署環境: $deploy_env"
     [ -n "$district" ] && log_info "收集區域: $district"
+    [ -n "$types" ] && log_info "搜尋類型: $types"
     [ "$force" = "true" ] && log_info "收集模式: 強制重新收集"
 
     check_prerequisites
 
     if [ "$skip_collection" != "true" ]; then
         if [ "$force" = "true" ]; then
-            collect_data "$district" "true"
+            collect_data "$district" "true" "$types"
         else
-            collect_data "$district"
+            collect_data "$district" "" "$types"
         fi
     else
         log_info "跳過資料收集"

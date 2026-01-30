@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -20,11 +21,18 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+# 配置日誌
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
 
 def integrate_restaurant_data(
     json_file_path: str,
     db_path: str,
-    verbose: bool = True
+    verbose: bool = True,
+    upload_photos: bool = True
 ) -> dict[str, int]:
     """
     整合餐廳資料到 Serverless 資料庫
@@ -33,6 +41,7 @@ def integrate_restaurant_data(
         json_file_path: JSON 資料檔案路徑
         db_path: 資料庫檔案路徑
         verbose: 是否顯示詳細輸出
+        upload_photos: 是否上傳圖片到 R2 (需要設定 R2 和 Google API 環境變數)
 
     Returns:
         包含成功、跳過、錯誤數量的統計字典
@@ -40,7 +49,7 @@ def integrate_restaurant_data(
     if verbose:
         print(f"開始整合資料：{json_file_path}")
         print(f"目標資料庫：{db_path}")
-    
+
     json_path = Path(json_file_path)
     if not json_path.exists():
         raise FileNotFoundError(f"找不到資料檔案：{json_file_path}")
@@ -52,7 +61,16 @@ def integrate_restaurant_data(
     if verbose:
         print(f"載入 {len(restaurants_data)} 筆餐廳資料")
 
-    transformer = DataTransformer()
+    # 初始化 DataTransformer (傳入 Google API key 以啟用圖片上傳)
+    google_api_key = None
+    if upload_photos:
+        google_api_key = os.getenv('GOOGLE_MAPS_API_KEY')
+        if google_api_key:
+            print("圖片上傳功能已啟用 (將下載圖片並上傳到 R2)")
+        else:
+            print("警告：未設定 GOOGLE_MAPS_API_KEY，圖片上傳功能停用")
+
+    transformer = DataTransformer(google_api_key=google_api_key)
 
     success_count = 0
     error_count = 0
@@ -159,10 +177,19 @@ def main() -> int:
         結束代碼 (0: 成功, 1: 失敗)
     """
     if len(sys.argv) < 3:
-        print("使用方式: python integrate_data.py <json_file_path> <database_path> [--quiet]")
+        print("使用方式: python integrate_data.py <json_file_path> <database_path> [選項]")
         print("範例: python integrate_data.py taipei_restaurants_20260128.json ./temp_import.db")
         print("參數:")
-        print("  --quiet  安靜模式，減少輸出訊息")
+        print("  --quiet             安靜模式，減少輸出訊息")
+        print("  --no-upload-photos  停用圖片上傳功能 (不下載圖片到 R2)")
+        print("")
+        print("圖片上傳環境變數:")
+        print("  GOOGLE_MAPS_API_KEY  Google Maps API 金鑰")
+        print("  R2_ACCOUNT_ID        Cloudflare 帳號 ID")
+        print("  R2_ACCESS_KEY_ID     R2 API Token Access Key ID")
+        print("  R2_SECRET_ACCESS_KEY R2 API Token Secret Access Key")
+        print("  R2_BUCKET_NAME       R2 bucket 名稱 (預設: feednav-storage)")
+        print("  R2_PUBLIC_URL        R2 公開存取 URL (預設: https://storage.feednav.cc)")
         print("")
         print("提示: 整合到遠端 D1 資料庫請參考 README.md")
         return 1
@@ -170,9 +197,12 @@ def main() -> int:
     json_file_path = sys.argv[1]
     db_path = sys.argv[2]
     verbose = '--quiet' not in sys.argv
+    upload_photos = '--no-upload-photos' not in sys.argv
 
     try:
-        result = integrate_restaurant_data(json_file_path, db_path, verbose)
+        result = integrate_restaurant_data(
+            json_file_path, db_path, verbose, upload_photos
+        )
 
         if result['error'] > 0:
             logger.warning(f"整合完成，但有 {result['error']} 筆錯誤")

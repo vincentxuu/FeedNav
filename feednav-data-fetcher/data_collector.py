@@ -69,6 +69,22 @@ SEARCH_TYPES: dict[str, dict[str, Any]] = {
         'type': 'restaurant',
         'keywords': ['健康餐', '沙拉', '健身餐', '低卡'],
     },
+    'bar': {
+        'type': 'bar',
+        'keywords': ['酒吧', '居酒屋', '酒館'],
+    },
+    'meal_delivery': {
+        'type': 'meal_delivery',
+        'keywords': ['外送', '便當', '外送美食'],
+    },
+    'meal_takeaway': {
+        'type': 'meal_takeaway',
+        'keywords': ['外帶', '外帶美食'],
+    },
+    'food': {
+        'type': 'food',
+        'keywords': ['食物', '小吃', '美食'],
+    },
 }
 
 # Place Details 請求欄位

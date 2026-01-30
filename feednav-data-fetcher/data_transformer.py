@@ -6,9 +6,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
+import requests
+
 from review_tag_extractor import VisitDurationExtractor
+from r2_uploader import R2Uploader, create_r2_uploader
+
+logger = logging.getLogger(__name__)
 
 # 配置常數
 TRANSFORMER_CONFIG = {
@@ -16,16 +22,39 @@ TRANSFORMER_CONFIG = {
     'TAG_CONFIDENCE_THRESHOLD': 0.5,         # 標籤信心度門檻
     'CUISINE_HIGH_CONFIDENCE_THRESHOLD': 0.8, # 高信心度菜系門檻
     'MAX_MRT_STATIONS': 2,                   # 描述中顯示的最大捷運站數
+    'PHOTO_MAX_WIDTH': 800,                  # 圖片最大寬度
+    'PHOTO_REQUEST_TIMEOUT': 10,             # 圖片下載超時時間 (秒)
 }
+
+# Google Places Photo API URL 模板
+GOOGLE_PHOTO_URL = (
+    "https://maps.googleapis.com/maps/api/place/photo"
+    "?maxwidth={maxwidth}&photo_reference={photo_reference}&key={api_key}"
+)
 
 
 class DataTransformer:
     """資料轉換器"""
 
-    def __init__(self) -> None:
-        """初始化資料轉換器"""
+    def __init__(self, google_api_key: str | None = None) -> None:
+        """
+        初始化資料轉換器
+
+        Args:
+            google_api_key: Google Maps API 金鑰 (用於下載圖片)
+        """
         self.tag_mapping = self._load_tag_mapping()
         self.duration_extractor = VisitDurationExtractor()
+        self.google_api_key = google_api_key
+        self.r2_uploader: R2Uploader | None = None
+
+        # 嘗試初始化 R2 上傳器
+        if google_api_key:
+            self.r2_uploader = create_r2_uploader()
+            if self.r2_uploader:
+                logger.info("R2 上傳已啟用，圖片將上傳到 R2")
+            else:
+                logger.info("R2 上傳未啟用，使用 photo_reference 格式")
 
     def _load_tag_mapping(self) -> dict[str, dict[str, str]]:
         """載入標籤對應表"""
@@ -123,6 +152,7 @@ class DataTransformer:
         Returns:
             轉換後的餐廳資料
         """
+        place_id = fetcher_data.get('place_id')
         restaurant: dict[str, Any] = {
             'name': fetcher_data.get('name'),
             'district': fetcher_data.get('district'),
@@ -136,7 +166,7 @@ class DataTransformer:
             'latitude': self._extract_latitude(fetcher_data),
             'longitude': self._extract_longitude(fetcher_data),
             'photos': json.dumps(
-                self._process_photos(fetcher_data.get('photos', []))
+                self._process_photos(fetcher_data.get('photos', []), place_id)
             ),
             'opening_hours': json.dumps(fetcher_data.get('opening_hours')),
             'description': self._generate_description(fetcher_data)
@@ -188,15 +218,19 @@ class DataTransformer:
         return location.get('lng')
 
     def _process_photos(
-        self, photos: list[dict[str, Any] | str]
+        self,
+        photos: list[dict[str, Any] | str],
+        place_id: str | None = None
     ) -> list[dict[str, Any]]:
         """
         處理照片資料
 
-        只儲存 photo_reference，避免暴露 API Key。
+        如果 R2 上傳器可用，會下載圖片並上傳到 R2，返回永久有效的 URL。
+        否則只儲存 photo_reference。
 
         Args:
             photos: 照片資料列表
+            place_id: 餐廳的 place_id (用於 R2 路徑)
 
         Returns:
             處理後的照片資料
@@ -204,17 +238,96 @@ class DataTransformer:
         photo_data: list[dict[str, Any]] = []
         max_photos = TRANSFORMER_CONFIG['MAX_PHOTOS']
 
-        for photo in photos[:max_photos]:
+        for index, photo in enumerate(photos[:max_photos]):
             if isinstance(photo, dict) and 'photo_reference' in photo:
+                photo_reference = photo['photo_reference']
+
+                # 嘗試上傳到 R2
+                if self.r2_uploader and self.google_api_key and place_id:
+                    url = self._download_and_upload_photo(
+                        photo_reference, place_id, index
+                    )
+                    if url:
+                        photo_data.append({
+                            'url': url,
+                            'width': photo.get('width'),
+                            'height': photo.get('height')
+                        })
+                        continue
+
+                # 如果 R2 上傳失敗或未啟用，使用 photo_reference
                 photo_data.append({
-                    'photo_reference': photo['photo_reference'],
+                    'photo_reference': photo_reference,
                     'width': photo.get('width'),
                     'height': photo.get('height')
                 })
+
             elif isinstance(photo, str):
                 photo_data.append({'url': photo})
 
         return photo_data
+
+    def _download_and_upload_photo(
+        self,
+        photo_reference: str,
+        place_id: str,
+        index: int
+    ) -> str | None:
+        """
+        從 Google Places API 下載圖片並上傳到 R2
+
+        Args:
+            photo_reference: Google Places 圖片參考 ID
+            place_id: 餐廳的 place_id
+            index: 圖片索引
+
+        Returns:
+            R2 公開 URL，失敗時返回 None
+        """
+        if not self.r2_uploader or not self.google_api_key:
+            return None
+
+        # 組合 Google Places Photo API URL
+        photo_url = GOOGLE_PHOTO_URL.format(
+            maxwidth=TRANSFORMER_CONFIG['PHOTO_MAX_WIDTH'],
+            photo_reference=photo_reference,
+            api_key=self.google_api_key
+        )
+
+        try:
+            # 下載圖片
+            response = requests.get(
+                photo_url,
+                timeout=TRANSFORMER_CONFIG['PHOTO_REQUEST_TIMEOUT']
+            )
+            response.raise_for_status()
+
+            # 確認是圖片類型
+            content_type = response.headers.get('Content-Type', '')
+            if not content_type.startswith('image/'):
+                logger.warning(
+                    f"非圖片回應 (place_id: {place_id}, index: {index}): "
+                    f"{content_type}"
+                )
+                return None
+
+            # 上傳到 R2
+            url = self.r2_uploader.upload_image(
+                response.content, place_id, index
+            )
+            logger.debug(f"圖片上傳成功: {url}")
+            return url
+
+        except requests.RequestException as e:
+            logger.warning(
+                f"圖片下載失敗 (place_id: {place_id}, index: {index}): {e}"
+            )
+            return None
+        except Exception as e:
+            logger.warning(
+                f"圖片處理失敗 (place_id: {place_id}, index: {index}): {e}"
+            )
+            return None
 
     def _process_tags(
         self, tags_data: dict[str, Any]

@@ -74,7 +74,15 @@ python main.py -p -l 2
 # 同時收集餐廳和咖啡廳
 python main.py -d 大安區 --types restaurant cafe
 
-# 可用類型：restaurant, dessert, cafe, healthy
+# 可用類型：
+# restaurant - 餐廳
+# dessert    - 甜點、蛋糕、冰品
+# cafe       - 咖啡廳
+# healthy    - 健康餐、沙拉
+# bar        - 酒吧、居酒屋
+# meal_delivery - 外送、便當
+# meal_takeaway - 外帶
+# food       - 小吃、美食
 ```
 
 ### 強制重新收集
@@ -553,12 +561,15 @@ SELECT 1, id FROM tags WHERE name = '有Wi-Fi';
 | 參數 | 說明 |
 |------|------|
 | `--district <區域>` | **必填**，指定要收集的單一區域 |
+| `--types <類型...>` | 指定搜尋類型（用引號包住多個類型） |
 | `--force` | 強制重新收集所有餐廳（忽略已收集記錄） |
 | `--skip-collection` | 跳過資料收集，使用現有 JSON 檔案 |
 | `--preview` | 部署到 Preview 環境 (預設) |
 | `--production` | 部署到 Production 環境 |
 | `--no-deploy` | 只處理資料，不部署到 Cloudflare |
 | `--help` | 顯示使用說明 |
+
+**可用搜尋類型**：`restaurant`, `dessert`, `cafe`, `healthy`, `bar`, `meal_delivery`, `meal_takeaway`, `food`
 
 #### 使用範例
 
@@ -568,6 +579,12 @@ SELECT 1, id FROM tags WHERE name = '有Wi-Fi';
 
 # 強制重新收集整個區域（忽略已收集記錄）
 ./batch_integration.sh --district 大安區 --force
+
+# 收集大安區的酒吧和咖啡廳
+./batch_integration.sh --district 大安區 --types "bar cafe"
+
+# 收集信義區的小吃並部署到 Production
+./batch_integration.sh --district 信義區 --types "food" --production
 
 # 收集信義區並部署到 Production
 ./batch_integration.sh --district 信義區 --production
