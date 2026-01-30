@@ -5,6 +5,8 @@ import RestaurantCard from '@/components/RestaurantCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SearchX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import EmptyState from '@/components/EmptyState'
+import type { LucideIcon } from 'lucide-react'
 
 interface RestaurantGridProps {
   isLoading: boolean
@@ -16,6 +18,16 @@ interface RestaurantGridProps {
   onToggleVisited: (restaurantId: number, isVisited: boolean) => void
   isMutatingVisited: boolean
   onClearFilters: () => void
+  emptyState?: {
+    icon: LucideIcon
+    title: string
+    description: string
+    action?: {
+      label: string
+      href?: string
+      onClick?: () => void
+    }
+  }
 }
 
 const RestaurantGrid = ({
@@ -28,6 +40,7 @@ const RestaurantGrid = ({
   onToggleVisited,
   isMutatingVisited,
   onClearFilters,
+  emptyState,
 }: RestaurantGridProps) => {
   if (isLoading) {
     return (
@@ -50,12 +63,22 @@ const RestaurantGrid = ({
   }
 
   if (restaurants.length === 0) {
+    if (emptyState) {
+      return (
+        <EmptyState
+          icon={emptyState.icon}
+          title={emptyState.title}
+          description={emptyState.description}
+          action={emptyState.action}
+        />
+      )
+    }
     return (
       <div className="flex flex-col items-center space-y-4 py-16 text-center">
         <SearchX className="h-16 w-16 text-muted-foreground" />
         <div className="space-y-1">
           <h2 className="text-2xl font-semibold">找不到符合條件的餐廳</h2>
-          <p className="text-muted-foreground">請嘗試調整或清除您的搜尋與篩選條件。</p>
+          <p className="text-muted-foreground">試試調整篩選條件，或許會有意外發現</p>
         </div>
         <Button onClick={onClearFilters}>清除所有篩選條件</Button>
       </div>

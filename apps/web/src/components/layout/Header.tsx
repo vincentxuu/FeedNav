@@ -86,7 +86,7 @@ const Header = ({
                     className="whitespace-nowrap"
                   >
                     <Dices className="mr-2 h-4 w-4" />
-                    幫我決定
+                    今天吃什麼？
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

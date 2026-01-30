@@ -60,8 +60,8 @@ export const useRestaurantDetail = (id: string) => {
   const toggleFavorite = async (restaurantId: number, isFavorited: boolean) => {
     if (!user) {
       toast({
-        title: '請先登入',
-        description: '登入後才能收藏餐廳喔！',
+        title: '收藏這家餐廳？',
+        description: '登入後即可開始建立你的口袋名單',
         variant: 'destructive',
       })
       return
@@ -71,12 +71,12 @@ export const useRestaurantDetail = (id: string) => {
       if (isFavorited) {
         await removeFavorite(restaurantId)
         toast({
-          title: '已取消收藏',
+          title: '已從口袋名單移除',
         })
       } else {
         await addFavorite(restaurantId)
         toast({
-          title: '已收藏！',
+          title: '已加入口袋名單！',
         })
       }
     } catch {

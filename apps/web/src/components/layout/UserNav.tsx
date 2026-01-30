@@ -48,7 +48,7 @@ const UserNav = ({
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link href="/favorites">
             <Heart className="mr-2 h-4 w-4" />
-            <span>我的收藏</span>
+            <span>我的口袋名單</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="cursor-pointer">

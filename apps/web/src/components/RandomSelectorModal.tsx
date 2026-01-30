@@ -83,8 +83,8 @@ const RandomSelectorModal = ({ isOpen, onOpenChange, restaurants }: RandomSelect
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>幫您決定！</DialogTitle>
-          <DialogDescription>從目前的篩選結果中隨機挑選一家餐廳。</DialogDescription>
+          <DialogTitle>今天就吃這家！</DialogTitle>
+          <DialogDescription>從精選餐廳中為你挑選</DialogDescription>
         </DialogHeader>
 
         <div className="my-4 flex min-h-[100px] items-center justify-center rounded-lg bg-muted/50 py-8 text-center">

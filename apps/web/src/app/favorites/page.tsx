@@ -16,6 +16,7 @@ import { fetchRestaurants } from '@/queries/restaurants'
 import type { Restaurant } from '@/types'
 import { AppPagination } from '@/components/AppPagination'
 import { useVisitedRestaurants } from '@/hooks/useVisitedRestaurants'
+import { Heart } from 'lucide-react'
 
 const initialFilters: Filters = {
   district: 'all',
@@ -113,10 +114,10 @@ export default function FavoritesPage() {
     try {
       if (isFavorited) {
         await removeFavorite(restaurantId)
-        toast({ title: '已從收藏移除' })
+        toast({ title: '已從口袋名單移除' })
       } else {
         await addFavorite(restaurantId)
-        toast({ title: '已加入收藏！' })
+        toast({ title: '已加入口袋名單！' })
       }
     } catch {
       // Error toast is handled in the hook
@@ -144,7 +145,7 @@ export default function FavoritesPage() {
     } else {
       toast({
         title: '沒有可選的餐廳',
-        description: '您尚未收藏任何餐廳。',
+        description: '您尚未加入任何餐廳到口袋名單。',
       })
     }
   }
@@ -192,8 +193,8 @@ export default function FavoritesPage() {
       <main>
         <div id="main-content" className="container scroll-mt-20 py-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">我的收藏</h1>
-            <p className="text-muted-foreground">您收藏的餐廳會顯示在這裡。</p>
+            <h1 className="text-3xl font-bold tracking-tight">我的口袋名單</h1>
+            <p className="text-muted-foreground">收藏的好餐廳，隨時想吃就看</p>
           </div>
           <ActiveFilters
             filters={filters}
@@ -211,6 +212,15 @@ export default function FavoritesPage() {
             onToggleVisited={handleToggleVisited}
             isMutatingVisited={isMutatingVisited}
             onClearFilters={handleClearAllFilters}
+            emptyState={{
+              icon: Heart,
+              title: '你的口袋名單即將誕生',
+              description: '看到喜歡的餐廳？點擊愛心收藏起來吧！',
+              action: {
+                label: '探索餐廳',
+                href: '/',
+              },
+            }}
           />
           <AppPagination
             currentPage={currentPage}

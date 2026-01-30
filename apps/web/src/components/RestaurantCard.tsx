@@ -48,11 +48,11 @@ const RestaurantCard = ({
     e.stopPropagation()
     if (!session) {
       toast({
-        title: '請先登入',
-        description: '登入後即可收藏您喜愛的餐廳。',
+        title: '收藏這家餐廳？',
+        description: '登入後即可開始建立你的口袋名單',
         action: (
           <Button variant="secondary" size="sm" onClick={() => router.push('/auth')}>
-            前往登入
+            立即登入
           </Button>
         ),
       })
@@ -79,17 +79,23 @@ const RestaurantCard = ({
     onToggleVisited(parseInt(restaurant.id, 10), !!restaurant.is_visited)
   }
 
+  const isFavorited = session && restaurant.is_favorited
+
   const favoriteButton = (
     <Button
       variant="ghost"
       size="icon"
-      className="h-8 w-8 rounded-full bg-black/30 text-white hover:bg-black/50"
+      className={`h-8 w-8 rounded-full transition-all ${
+        isFavorited
+          ? 'scale-110 bg-red-500/90 text-white hover:bg-red-600/90'
+          : 'bg-black/30 text-white hover:bg-black/50'
+      }`}
       onClick={handleFavoriteClick}
       disabled={session ? isMutatingFavorite : false}
       aria-label="收藏"
     >
       <Heart
-        className={`h-4 w-4 transition-all ${session && restaurant.is_favorited ? 'fill-current text-red-500' : 'text-white'}`}
+        className={`h-4 w-4 transition-all ${isFavorited ? 'animate-heart-beat fill-current' : ''}`}
       />
     </Button>
   )
@@ -145,7 +151,7 @@ const RestaurantCard = ({
               <Tooltip>
                 <TooltipTrigger asChild>{favoriteButton}</TooltipTrigger>
                 <TooltipContent>
-                  <p>登入即可收藏</p>
+                  <p>登入收藏到口袋名單</p>
                 </TooltipContent>
               </Tooltip>
             )}

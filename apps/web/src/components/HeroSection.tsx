@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { MapPin } from 'lucide-react'
+import { Dices } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface HeroSectionProps {
@@ -8,16 +8,16 @@ interface HeroSectionProps {
 
 const HeroSection = ({ onRandomSelect }: HeroSectionProps) => {
   return (
-    <div className="bg-gradient-to-b from-background to-secondary/20 py-16 text-center md:py-24">
+    <div className="bg-gradient-to-b from-primary/5 via-background to-secondary/20 py-16 text-center md:py-24">
       <div className="container">
         <h1 className="animate-fade-in mb-4 text-4xl font-extrabold tracking-tight text-primary md:text-5xl">
-          在美食之都，不再選擇困難
+          發現台北隱藏版美食
         </h1>
         <p
           className="animate-fade-in mx-auto mb-8 max-w-2xl text-lg text-muted-foreground md:text-xl"
           style={{ animationDelay: '0.2s' }}
         >
-          從數百家精選餐廳中，讓 AI 為您找到今日完美的一餐。
+          從數百家精選餐廳中，一鍵找到今日完美的一餐
         </p>
         <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
           <Tooltip>
@@ -25,14 +25,14 @@ const HeroSection = ({ onRandomSelect }: HeroSectionProps) => {
               <Button
                 size="lg"
                 onClick={onRandomSelect}
-                className="transform shadow-lg transition-transform hover:scale-105"
+                className="animate-pulse-subtle transform bg-gradient-to-r from-primary to-primary/80 shadow-lg transition-all hover:scale-105 hover:shadow-xl"
               >
-                <MapPin className="mr-2 h-5 w-5" />
-                附近吃什麼？
+                <Dices className="mr-2 h-5 w-5 animate-bounce-gentle" />
+                今天吃什麼？
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>優先從您所在位置附近隨機挑選餐廳</p>
+              <p>從精選餐廳中隨機挑選一家</p>
             </TooltipContent>
           </Tooltip>
         </div>

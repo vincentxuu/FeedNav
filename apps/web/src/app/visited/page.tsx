@@ -11,8 +11,8 @@ import Header from '@/components/layout/Header'
 import RestaurantGrid from '@/components/RestaurantGrid'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { Footprints } from 'lucide-react'
+import EmptyState from '@/components/EmptyState'
 
 export default function VisitedPage() {
   const { session, logout } = useAuthSession()
@@ -43,10 +43,10 @@ export default function VisitedPage() {
     try {
       if (isFavorited) {
         await removeFavorite(restaurantId)
-        toast({ title: '已從收藏移除' })
+        toast({ title: '已從口袋名單移除' })
       } else {
         await addFavorite(restaurantId)
-        toast({ title: '已加入收藏！' })
+        toast({ title: '已加入口袋名單！' })
       }
     } catch {
       // Error toast is handled in the hook
@@ -110,13 +110,15 @@ export default function VisitedPage() {
             onClearFilters={() => {}}
           />
         ) : (
-          <div className="flex flex-col items-center space-y-4 py-16 text-center">
-            <h2 className="text-2xl font-semibold">還沒有任何美食足跡</h2>
-            <p className="text-muted-foreground">快去探索美食，並將它們標記為「吃過了」吧！</p>
-            <Button asChild>
-              <Link href="/">開始探索</Link>
-            </Button>
-          </div>
+          <EmptyState
+            icon={Footprints}
+            title="美食冒險等著你"
+            description="吃過的餐廳會留下足跡，記錄你的美食旅程"
+            action={{
+              label: '開始探索',
+              href: '/',
+            }}
+          />
         )}
       </main>
     </div>

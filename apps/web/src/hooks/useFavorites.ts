@@ -47,7 +47,7 @@ export const useFavorites = (userId: string | undefined) => {
     },
     onError: () => {
       toast({
-        title: '收藏失敗',
+        title: '加入口袋名單失敗',
         description: '請稍後再試一次。',
         variant: 'destructive',
       })
@@ -69,7 +69,7 @@ export const useFavorites = (userId: string | undefined) => {
     },
     onError: () => {
       toast({
-        title: '取消收藏失敗',
+        title: '從口袋名單移除失敗',
         description: '請稍後再試一次。',
         variant: 'destructive',
       })

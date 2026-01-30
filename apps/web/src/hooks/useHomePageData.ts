@@ -119,10 +119,10 @@ export const useHomePageData = (session: Session | null) => {
     try {
       if (isFavorited) {
         await removeFavorite(restaurantId)
-        toast({ title: '已從收藏移除' })
+        toast({ title: '已從口袋名單移除' })
       } else {
         await addFavorite(restaurantId)
-        toast({ title: '已加入收藏！' })
+        toast({ title: '已加入口袋名單！' })
       }
     } catch {
       // Error toast is handled in the hook
