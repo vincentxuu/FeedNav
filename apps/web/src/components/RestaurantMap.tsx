@@ -52,18 +52,13 @@ const RestaurantMapComponent: React.FC<RestaurantMapProps> = ({
         // Import markercluster AFTER leaflet is globally available
         await import('leaflet.markercluster')
 
-        // Import icons
-        const icon = (await import('leaflet/dist/images/marker-icon.png')).default
-        const iconShadow = (await import('leaflet/dist/images/marker-shadow.png')).default
-        const iconRetina = (await import('leaflet/dist/images/marker-icon-2x.png')).default
-
-        // Fix Leaflet default icon path issue
+        // Fix Leaflet default icon path issue using CDN URLs
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         delete (leaflet.Icon.Default.prototype as any)._getIconUrl
         leaflet.Icon.Default.mergeOptions({
-          iconRetinaUrl: iconRetina,
-          iconUrl: icon,
-          shadowUrl: iconShadow,
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
         })
 
         setL(leaflet)
