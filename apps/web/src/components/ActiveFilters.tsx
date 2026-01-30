@@ -75,12 +75,12 @@ const ActiveFilters: React.FC<ActiveFiltersProps> = ({
           全部清除
         </Button>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {activeFilters.map((filter) => (
           <Badge
             key={filter.type}
             variant="secondary"
-            className="py-1 pl-3 pr-1 text-sm font-normal"
+            className="shrink-0 py-1 pl-3 pr-1 text-sm font-normal"
           >
             <span className="mr-1">{filter.label}</span>
             <button
