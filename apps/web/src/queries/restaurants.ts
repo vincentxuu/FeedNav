@@ -23,6 +23,7 @@ export const fetchRestaurants = async ({
       cuisine: filters?.cuisine,
       priceRange: filters?.priceRange,
       tags: filters?.tags,
+      limit: 100,
     })
 
     if (!response.success) {

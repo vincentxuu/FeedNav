@@ -18,7 +18,7 @@ export const useNearbyRestaurants = ({
   userLocation,
   favorites,
   visited,
-  count = 4,
+  count = 20,
 }: Props) => {
   const nearbyRestaurants = useMemo(() => {
     if (!userLocation || !restaurants || restaurants.length === 0) {
