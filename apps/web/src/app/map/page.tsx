@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Restaurant } from '@/types'
-import { fetchRestaurants } from '@/queries/restaurants'
+import { fetchRestaurantsByBounds, type MapBounds } from '@/queries/restaurants'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useVisitedRestaurants } from '@/hooks/useVisitedRestaurants'
-import { useRestaurants } from '@/hooks/useRestaurants'
 import { useAuthSession } from '@/hooks/useAuthSession'
 import RestaurantMap from '@/components/RestaurantMap'
 import Header from '@/components/layout/Header'
@@ -22,10 +21,32 @@ import { useAppFilters } from '@/hooks/useAppFilters'
 export default function MapPage() {
   const { session, logout } = useAuthSession()
   const [mounted, setMounted] = useState(false)
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null)
+  const [debouncedBounds, setDebouncedBounds] = useState<MapBounds | null>(null)
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Debounce bounds changes to avoid too many API calls
+  useEffect(() => {
+    if (!mapBounds) return
+
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current)
+    }
+
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedBounds(mapBounds)
+    }, 300)
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current)
+      }
+    }
+  }, [mapBounds])
 
   const {
     searchTerm,
@@ -38,22 +59,61 @@ export default function MapPage() {
     handleClearFilter,
   } = useAppFilters()
 
+  // Fetch restaurants based on map bounds
   const {
-    data: restaurantsFromDB,
-    isLoading: isLoadingRestaurants,
-    error: restaurantsError,
+    data: restaurantsFromDB = [],
+    isFetching,
   } = useQuery<Restaurant[]>({
-    queryKey: ['restaurants', searchTerm, filters, sortBy],
-    queryFn: () => fetchRestaurants({ searchTerm, filters, sortBy }),
+    queryKey: ['restaurants-bounds', debouncedBounds],
+    queryFn: () => fetchRestaurantsByBounds(debouncedBounds!, 300),
+    enabled: !!debouncedBounds,
+    staleTime: 30000, // Cache for 30 seconds
   })
 
   const { favorites } = useFavorites(session?.user?.id)
   const { visited } = useVisitedRestaurants(session?.user?.id)
 
-  const { restaurants: filteredRestaurants } = useRestaurants({
-    allRestaurants: restaurantsFromDB,
-    filters,
+  // Filter restaurants based on search term and filters
+  const filteredRestaurants = restaurantsFromDB.filter((restaurant) => {
+    // Search term filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      const matchesSearch =
+        restaurant.name?.toLowerCase().includes(search) ||
+        restaurant.address?.toLowerCase().includes(search) ||
+        restaurant.description?.toLowerCase().includes(search)
+      if (!matchesSearch) return false
+    }
+
+    // District filter
+    if (filters.district && filters.district !== 'all') {
+      if (restaurant.district !== filters.district) return false
+    }
+
+    // Cuisine filter
+    if (filters.cuisine && filters.cuisine !== 'all') {
+      if (restaurant.cuisine_type !== filters.cuisine) return false
+    }
+
+    // Price range filter
+    if (filters.priceRange) {
+      const [min, max] = filters.priceRange
+      if (restaurant.price_level < min || restaurant.price_level > max) return false
+    }
+
+    // Tags filter
+    if (filters.tags && filters.tags.length > 0) {
+      const restaurantTags = restaurant.tags?.map((t) => t.name) || []
+      const hasAllTags = filters.tags.every((tag) => restaurantTags.includes(tag))
+      if (!hasAllTags) return false
+    }
+
+    return true
   })
+
+  const handleBoundsChange = useCallback((bounds: MapBounds) => {
+    setMapBounds(bounds)
+  }, [])
 
   const handleLogout = async () => {
     await logout()
@@ -111,7 +171,11 @@ export default function MapPage() {
         </aside>
         <main className="relative flex-1">
           {mounted ? (
-            <RestaurantMap restaurants={filteredRestaurants} />
+            <RestaurantMap
+              restaurants={filteredRestaurants}
+              onBoundsChange={handleBoundsChange}
+              isLoading={isFetching}
+            />
           ) : (
             <div className="h-full w-full animate-pulse bg-gray-100" />
           )}

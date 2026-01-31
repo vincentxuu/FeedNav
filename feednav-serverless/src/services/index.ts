@@ -2,7 +2,7 @@ export { AuthService, AuthError, createAuthService } from './auth.service'
 export type { RegisterResult, LoginResult, RefreshResult } from './auth.service'
 
 export { RestaurantService, createRestaurantService } from './restaurant.service'
-export type { SearchResult, NearbyParams } from './restaurant.service'
+export type { SearchResult, NearbyParams, BoundsParams } from './restaurant.service'
 
 export { FavoriteService, FavoriteError, createFavoriteService } from './favorite.service'
 export type { FavoriteListResult, FavoriteCheckResult } from './favorite.service'

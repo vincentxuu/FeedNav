@@ -1,5 +1,5 @@
 import { Context } from 'hono'
-import { searchSchema } from '../utils/validators'
+import { searchSchema, boundsSchema } from '../utils/validators'
 import { createRestaurantService } from '../services'
 import type { AppEnv } from '../types'
 
@@ -161,9 +161,52 @@ async function tags(c: Context<AppEnv>) {
   }
 }
 
+async function bounds(c: Context<AppEnv>) {
+  try {
+    const body = await c.req.json()
+    const parseResult = boundsSchema.safeParse(body)
+
+    if (!parseResult.success) {
+      return c.json(
+        {
+          success: false,
+          error: 'VALIDATION_ERROR',
+          message: '請求參數驗證失敗',
+        },
+        400
+      )
+    }
+
+    const { minLat, maxLat, minLng, maxLng, limit } = parseResult.data
+    const userId = c.get('userId')
+    const restaurantService = createRestaurantService(c.env)
+
+    const restaurants = await restaurantService.getByBounds(
+      { minLat, maxLat, minLng, maxLng, limit },
+      userId
+    )
+
+    return c.json({
+      success: true,
+      data: { restaurants },
+    })
+  } catch (error) {
+    console.error('Bounds restaurants error:', error)
+    return c.json(
+      {
+        success: false,
+        error: 'BOUNDS_FAILED',
+        message: '獲取範圍內餐廳失敗',
+      },
+      500
+    )
+  }
+}
+
 export default {
   search,
   getById,
   nearby,
   tags,
+  bounds,
 }

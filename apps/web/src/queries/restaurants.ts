@@ -8,6 +8,13 @@ interface FetchRestaurantsParams {
   sortBy?: string
 }
 
+export interface MapBounds {
+  minLat: number
+  maxLat: number
+  minLng: number
+  maxLng: number
+}
+
 // Note: Using serverless API to handle filtering/sorting on the backend.
 // This improves performance and scalability for large datasets.
 export const fetchRestaurants = async ({
@@ -46,6 +53,41 @@ export const fetchRestaurants = async ({
     )
   } catch (e) {
     console.error('Failed to fetch or parse restaurant data from serverless API:', e)
+    throw new Error('Could not load restaurant data.')
+  }
+}
+
+export const fetchRestaurantsByBounds = async (
+  bounds: MapBounds,
+  limit = 200
+): Promise<Restaurant[]> => {
+  try {
+    const response = await apiClient.getRestaurantsByBounds(
+      bounds.minLat,
+      bounds.maxLat,
+      bounds.minLng,
+      bounds.maxLng,
+      limit
+    )
+
+    if (!response.success) {
+      console.error('Error fetching restaurants by bounds:', response.error)
+      throw new Error(response.message || 'Could not load restaurant data.')
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (response.data?.restaurants || []).map(
+      (r: any): Restaurant => ({
+        ...r,
+        id: String(r.id),
+        rating: Number(r.rating) || 0,
+        price_level: Number(r.price_level) || 1,
+        is_favorited: Boolean(r.is_favorited),
+        is_visited: Boolean(r.is_visited),
+      })
+    )
+  } catch (e) {
+    console.error('Failed to fetch restaurants by bounds:', e)
     throw new Error('Could not load restaurant data.')
   }
 }

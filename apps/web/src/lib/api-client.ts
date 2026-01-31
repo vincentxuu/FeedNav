@@ -298,6 +298,19 @@ class ApiClient {
     return this.request<{ tags: RestaurantTag[] }>(API_ENDPOINTS.RESTAURANTS.TAGS)
   }
 
+  async getRestaurantsByBounds(
+    minLat: number,
+    maxLat: number,
+    minLng: number,
+    maxLng: number,
+    limit = 200
+  ) {
+    return this.request<{ restaurants: Restaurant[] }>(API_ENDPOINTS.RESTAURANTS.BOUNDS, {
+      method: 'POST',
+      body: JSON.stringify({ minLat, maxLat, minLng, maxLng, limit }),
+    })
+  }
+
   // Favorites methods
   async getFavorites(page = 1, limit = 20) {
     return this.request<PaginatedResponse<Restaurant>>(
