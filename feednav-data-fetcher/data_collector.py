@@ -93,6 +93,45 @@ PLACE_DETAIL_FIELDS: list[str] = [
     'geometry', 'review', 'type', 'opening_hours', 'photo'
 ]
 
+# 餐飲相關類型白名單
+FOOD_RELATED_TYPES: set[str] = {
+    'restaurant', 'food', 'cafe', 'bakery', 'bar',
+    'meal_takeaway', 'meal_delivery', 'convenience_store',
+}
+
+# 非餐飲類型黑名單（優先排除）
+EXCLUDED_TYPES: set[str] = {
+    # 公共設施
+    'park', 'cemetery', 'library', 'museum',
+    'local_government_office', 'parking',
+    # 交通
+    'transit_station', 'bus_station', 'train_station', 'subway_station',
+    # 金融
+    'bank', 'atm', 'finance',
+    # 教育
+    'school', 'primary_school', 'secondary_school', 'university',
+    # 醫療
+    'hospital', 'doctor', 'dentist', 'pharmacy', 'veterinary_care', 'health',
+    # 宗教
+    'place_of_worship', 'church', 'mosque', 'synagogue', 'hindu_temple',
+    # 美容
+    'beauty_salon', 'hair_care', 'spa',
+    # 健身
+    'gym',
+    # 住宿（主要不是餐廳）
+    'lodging',
+    # 零售（非食物）
+    'clothing_store', 'shoe_store', 'jewelry_store', 'electronics_store',
+    'furniture_store', 'home_goods_store', 'hardware_store', 'bicycle_store',
+    # 服務業
+    'real_estate_agency', 'insurance_agency', 'lawyer', 'accounting',
+    'car_rental', 'car_repair', 'car_dealer', 'car_wash',
+    'moving_company', 'storage', 'plumber', 'electrician',
+    'general_contractor', 'roofing_contractor', 'painter',
+    # 其他
+    'florist', 'pet_store', 'laundry', 'locksmith',
+}
+
 
 def generate_grid_points(
     center: tuple[float, float],
@@ -164,6 +203,31 @@ class DataCollectionPipeline:
 
         return normalized
 
+    def _is_food_related(self, types: list[str]) -> bool:
+        """
+        檢查地點類型是否為餐飲相關
+
+        優先檢查黑名單，再檢查白名單。
+
+        Args:
+            types: Google Places API 返回的類型列表
+
+        Returns:
+            True 如果是餐飲相關，False 如果應該被過濾
+        """
+        type_set = set(types)
+
+        # 優先排除黑名單類型
+        if type_set & EXCLUDED_TYPES:
+            return False
+
+        # 檢查是否有餐飲相關類型
+        if type_set & FOOD_RELATED_TYPES:
+            return True
+
+        # 預設排除（沒有餐飲相關類型）
+        return False
+
     async def collect_restaurant_data(self, place_id: str) -> dict[str, Any] | None:
         """
         收集單一餐廳的詳細資料
@@ -184,6 +248,13 @@ class DataCollectionPipeline:
 
             # 標準化欄位名稱 (API 回傳可能用單數或複數)
             place_details = self._normalize_field_names(place_details)
+
+            # 過濾非餐飲相關地點
+            types = place_details.get('types', [])
+            if not self._is_food_related(types):
+                name = place_details.get('name', 'Unknown')
+                logger.debug(f"過濾非餐飲地點: {name} (types: {types[:3]})")
+                return None
 
             location_data = self.location_processor.process_location(place_details)
             cuisine_data = self.cuisine_classifier.classify_cuisine(place_details)
