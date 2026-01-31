@@ -89,7 +89,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--types', '-t',
         nargs='+',
-        choices=['restaurant', 'dessert', 'cafe', 'healthy'],
+        choices=['restaurant', 'dessert', 'cafe', 'healthy', 'bar', 'meal_delivery', 'meal_takeaway', 'food'],
         default=['restaurant'],
         help='搜尋類型 (預設: restaurant)'
     )
