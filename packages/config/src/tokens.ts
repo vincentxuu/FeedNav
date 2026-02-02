@@ -19,6 +19,15 @@ export const tokens = createTokens({
     backgroundFocus: '#f3f4f6', // gray-100
     backgroundDark: '#1f2937', // gray-800
     backgroundDarkHover: '#374151', // gray-700
+    backgroundDarkPress: '#4b5563', // gray-600
+
+    // Gray scale (for dark mode)
+    gray300: '#d1d5db',
+    gray400: '#9ca3af',
+    gray500: '#6b7280',
+    gray600: '#4b5563',
+    gray700: '#374151',
+    gray800: '#1f2937',
 
     // Surface colors (for cards, etc.)
     surface: '#ffffff',

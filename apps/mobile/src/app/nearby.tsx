@@ -30,8 +30,7 @@ export default function NearbyScreen() {
   } = useNearbyRestaurants(
     location?.latitude ?? 0,
     location?.longitude ?? 0,
-    radius,
-    20
+    radius
   )
 
   const restaurants = data?.data?.restaurants ?? []
@@ -182,7 +181,6 @@ export default function NearbyScreen() {
           renderItem={({ item }) => (
             <RestaurantCard
               restaurant={item}
-              showDistance
               onPress={() => router.push(`/restaurant/${item.id}`)}
             />
           )}

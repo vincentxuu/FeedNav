@@ -13,6 +13,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 })
 
@@ -27,8 +29,8 @@ export function usePushNotifications() {
   const [notification, setNotification] = useState<Notifications.Notification | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const notificationListener = useRef<Notifications.Subscription>()
-  const responseListener = useRef<Notifications.Subscription>()
+  const notificationListener = useRef<Notifications.Subscription>(undefined)
+  const responseListener = useRef<Notifications.Subscription>(undefined)
 
   const registerForPushNotifications = useCallback(async () => {
     if (!Device.isDevice) {
@@ -98,10 +100,10 @@ export function usePushNotifications() {
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current)
+        notificationListener.current.remove()
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current)
+        responseListener.current.remove()
       }
     }
   }, [registerForPushNotifications])
@@ -128,7 +130,7 @@ export async function scheduleLocalNotification(
       data,
       sound: true,
     },
-    trigger: trigger ?? { seconds: 1 },
+    trigger: trigger ?? { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 1 },
   })
 }
 
