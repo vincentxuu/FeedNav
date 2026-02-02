@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TamaguiProvider, Theme } from 'tamagui'
 import { useFonts } from 'expo-font'
@@ -43,14 +44,16 @@ export default function RootLayout() {
       <TamaguiProvider config={config}>
         <Theme name="light">
           <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                }}
-              />
-              <StatusBar style="auto" />
-            </AuthProvider>
+            <BottomSheetModalProvider>
+              <AuthProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                  }}
+                />
+                <StatusBar style="auto" />
+              </AuthProvider>
+            </BottomSheetModalProvider>
           </QueryClientProvider>
         </Theme>
       </TamaguiProvider>

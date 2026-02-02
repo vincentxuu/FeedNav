@@ -1,6 +1,7 @@
-import { useState, useCallback, useMemo } from 'react'
-import { ScrollView } from 'react-native'
-import { Sheet, YStack, XStack, Text, Separator } from 'tamagui'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { ScrollView, StyleSheet, View } from 'react-native'
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
+import { YStack, XStack, Text, Separator } from 'tamagui'
 import { X, Check } from '@tamagui/lucide-icons'
 
 import { Button, Badge } from '@/ui'
@@ -24,8 +25,34 @@ interface FilterSheetProps {
 export function FilterSheet({ open, onOpenChange, filters, onApply }: FilterSheetProps) {
   const [localFilters, setLocalFilters] = useState<FilterState>(filters)
   const { data: tagsData } = useTags()
+  const bottomSheetRef = useRef<BottomSheet>(null)
 
   const tags = useMemo(() => tagsData?.data?.tags ?? [], [tagsData])
+  const snapPoints = useMemo(() => ['85%'], [])
+
+  useEffect(() => {
+    if (open) {
+      bottomSheetRef.current?.expand()
+    } else {
+      bottomSheetRef.current?.close()
+    }
+  }, [open])
+
+  const handleSheetChanges = useCallback(
+    (index: number) => {
+      if (index === -1) {
+        onOpenChange(false)
+      }
+    },
+    [onOpenChange]
+  )
+
+  const renderBackdrop = useCallback(
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
+      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+    ),
+    []
+  )
 
   const handleReset = useCallback(() => {
     setLocalFilters({})
@@ -83,17 +110,17 @@ export function FilterSheet({ open, onOpenChange, filters, onApply }: FilterShee
   )
 
   return (
-    <Sheet
-      modal
-      open={open}
-      onOpenChange={onOpenChange}
-      snapPoints={[85]}
-      dismissOnSnapToBottom
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={-1}
+      snapPoints={snapPoints}
+      onChange={handleSheetChanges}
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      handleIndicatorStyle={styles.handleIndicator}
+      backgroundStyle={styles.background}
     >
-      <Sheet.Overlay />
-      <Sheet.Frame>
-        <Sheet.Handle />
-
+      <BottomSheetView style={styles.contentContainer}>
         {/* Header */}
         <XStack
           padding="$4"
@@ -114,7 +141,7 @@ export function FilterSheet({ open, onOpenChange, filters, onApply }: FilterShee
         </XStack>
 
         {/* Filters */}
-        <ScrollView style={{ flex: 1 }}>
+        <ScrollView style={styles.scrollView}>
           <YStack padding="$4" gap="$6">
             {/* District */}
             <YStack gap="$3">
@@ -214,7 +241,23 @@ export function FilterSheet({ open, onOpenChange, filters, onApply }: FilterShee
             </Text>
           </Button>
         </YStack>
-      </Sheet.Frame>
-    </Sheet>
+      </BottomSheetView>
+    </BottomSheet>
   )
 }
+
+const styles = StyleSheet.create({
+  contentContainer: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  handleIndicator: {
+    backgroundColor: '#ccc',
+    width: 40,
+  },
+  background: {
+    backgroundColor: '#fff',
+  },
+})

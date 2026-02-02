@@ -76,6 +76,7 @@ export default {
       'expo-router',
       'expo-secure-store',
       'expo-location',
+      'expo-web-browser',
       [
         'expo-notifications',
         {
