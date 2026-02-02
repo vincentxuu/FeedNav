@@ -46,20 +46,20 @@ const lightTheme = {
 const darkTheme: typeof lightTheme = {
   background: tokens.color.backgroundDark,
   backgroundHover: tokens.color.backgroundDarkHover,
-  backgroundPress: '#4b5563', // gray-600
+  backgroundPress: tokens.color.backgroundDarkPress,
   backgroundFocus: tokens.color.backgroundDarkHover,
 
   color: tokens.color.textInverse,
   colorHover: tokens.color.textInverse,
-  colorPress: '#d1d5db', // gray-300
+  colorPress: tokens.color.gray300,
   colorFocus: tokens.color.textInverse,
 
-  borderColor: '#374151', // gray-700
-  borderColorHover: '#4b5563', // gray-600
+  borderColor: tokens.color.gray700,
+  borderColorHover: tokens.color.gray600,
   borderColorFocus: tokens.color.primaryLight,
-  borderColorPress: '#374151',
+  borderColorPress: tokens.color.gray700,
 
-  placeholderColor: '#9ca3af', // gray-400
+  placeholderColor: tokens.color.gray400,
 
   // Semantic colors (slightly adjusted for dark mode)
   primary: tokens.color.primaryLight,
@@ -75,13 +75,13 @@ const darkTheme: typeof lightTheme = {
   error: tokens.color.errorLight,
   info: tokens.color.infoLight,
 
-  textMuted: '#9ca3af', // gray-400
-  textSecondary: '#d1d5db', // gray-300
-  textDisabled: '#6b7280', // gray-500
+  textMuted: tokens.color.gray400,
+  textSecondary: tokens.color.gray300,
+  textDisabled: tokens.color.gray500,
 
   surface: tokens.color.surfaceDark,
-  surfaceHover: '#1f2937', // gray-800
-  surfacePress: '#374151', // gray-700
+  surfaceHover: tokens.color.gray800,
+  surfacePress: tokens.color.gray700,
 
   rating: tokens.color.rating,
 }

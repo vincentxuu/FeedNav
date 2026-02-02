@@ -83,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
               marginTop="$4"
               width="100%"
             >
-              <Text fontSize={12} color="$error" fontFamily="$mono">
+              <Text fontSize={12} color="$error" style={{ fontFamily: 'monospace' }}>
                 {this.state.error.message}
               </Text>
             </YStack>
