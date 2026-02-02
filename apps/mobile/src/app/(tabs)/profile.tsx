@@ -10,7 +10,7 @@ import {
   ChevronRight,
 } from '@tamagui/lucide-icons'
 
-import { Button, Card } from '@feednav/ui'
+import { Button, Card } from '@/ui'
 import { useAuth } from '@/lib/auth-context'
 import { useVisitStats } from '@/lib/queries'
 

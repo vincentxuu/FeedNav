@@ -1,12 +1,11 @@
-import { styled, GetProps } from 'tamagui'
+import { styled, Text, GetProps } from 'tamagui'
 
-export const Badge = styled('span', {
+export const Badge = styled(Text, {
   name: 'Badge',
-  tag: 'span',
-  display: 'inline-flex',
+  display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: '$full',
+  borderRadius: 9999,
   fontSize: 12,
   fontWeight: '500',
   lineHeight: 1,

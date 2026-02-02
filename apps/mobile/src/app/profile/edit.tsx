@@ -6,7 +6,7 @@ import { YStack, XStack, Text, Image, Spinner } from 'tamagui'
 import { ArrowLeft, Camera, User } from '@tamagui/lucide-icons'
 import * as ImagePicker from 'expo-image-picker'
 
-import { Button, Input } from '@feednav/ui'
+import { Button, Input } from '@/ui'
 import { useAuth } from '@/lib/auth-context'
 
 export default function EditProfileScreen() {

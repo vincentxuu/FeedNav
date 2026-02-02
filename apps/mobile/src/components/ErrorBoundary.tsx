@@ -2,7 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { YStack, Text } from 'tamagui'
 import { AlertTriangle, RefreshCw } from '@tamagui/lucide-icons'
 
-import { Button } from '@feednav/ui'
+import { Button } from '@/ui'
 
 interface Props {
   children: ReactNode

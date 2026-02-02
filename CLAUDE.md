@@ -13,7 +13,6 @@ FeedNav is a restaurant discovery and recommendation platform for Taipei, Taiwan
 ### Packages (Shared)
 - **packages/shared**: Shared types, constants, and API client factory
 - **packages/config**: Tamagui theme configuration (tokens, themes)
-- **packages/ui**: Shared UI components (Button, Card, RestaurantCard, etc.)
 
 ### Services
 - **feednav-serverless**: Hono.js REST API running on Cloudflare Workers with D1 database
@@ -87,7 +86,6 @@ python integrate_data.py <json_file> <db>   # Import data to database
               │   packages/* (shared)   │
               │   - @feednav/shared     │
               │   - @feednav/config     │
-              │   - @feednav/ui         │
               └────────────┬────────────┘
                            │ API calls
                            ▼
@@ -119,6 +117,7 @@ FeedNav/
 │       └── src/
 │           ├── app/            # Expo Router pages
 │           ├── components/     # Mobile components
+│           ├── ui/             # Tamagui UI components
 │           └── lib/            # Mobile utilities
 ├── packages/
 │   ├── shared/                 # Shared logic
@@ -126,17 +125,11 @@ FeedNav/
 │   │       ├── types/          # TypeScript types
 │   │       ├── constants/      # API endpoints, config
 │   │       └── api/            # API client factory
-│   ├── config/                 # Tamagui theme
-│   │   └── src/
-│   │       ├── tokens.ts       # Design tokens
-│   │       ├── themes.ts       # Light/dark themes
-│   │       └── tamagui.config.ts
-│   └── ui/                     # Shared UI components
+│   └── config/                 # Tamagui theme
 │       └── src/
-│           ├── Button.tsx
-│           ├── Card.tsx
-│           ├── RestaurantCard.tsx
-│           └── ...
+│           ├── tokens.ts       # Design tokens
+│           ├── themes.ts       # Light/dark themes
+│           └── tamagui.config.ts
 ├── feednav-serverless/         # Cloudflare Workers API
 ├── feednav-data-fetcher/       # Python data pipeline
 ├── package.json                # Workspace root
@@ -176,11 +169,6 @@ Contains Tamagui theme configuration including:
 - `tokens` - Colors, spacing, sizes, radii
 - `themes` - Light and dark theme definitions
 - `config` - Complete Tamagui config
-
-### @feednav/ui
-Contains cross-platform UI components built with Tamagui:
-- `Button`, `Card`, `Badge`, `Input`
-- `RestaurantCard` - Restaurant display card
 
 ## Environment Configuration
 

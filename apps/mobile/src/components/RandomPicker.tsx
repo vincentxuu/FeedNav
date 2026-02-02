@@ -4,7 +4,7 @@ import { Sheet, YStack, XStack, Text, Spinner } from 'tamagui'
 import { Dice5, RefreshCw, Navigation } from '@tamagui/lucide-icons'
 import { useRouter } from 'expo-router'
 
-import { Button } from '@feednav/ui'
+import { Button } from '@/ui'
 import { useRestaurants } from '@/lib/queries'
 import type { Restaurant } from '@feednav/shared'
 

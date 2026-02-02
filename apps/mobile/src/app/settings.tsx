@@ -16,7 +16,7 @@ import {
   Trash2,
 } from '@tamagui/lucide-icons'
 
-import { Button, Card } from '@feednav/ui'
+import { Button, Card } from '@/ui'
 import { useAuth } from '@/lib/auth-context'
 
 export default function SettingsScreen() {

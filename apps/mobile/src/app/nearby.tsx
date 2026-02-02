@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { YStack, XStack, Text, Spinner, Separator } from 'tamagui'
 import { MapPin, Navigation, RefreshCw, ChevronRight } from '@tamagui/lucide-icons'
 
-import { RestaurantCard, Button, Card } from '@feednav/ui'
+import { RestaurantCard, Button, Card } from '@/ui'
 import { useNearbyRestaurants } from '@/lib/queries'
 import { useLocation } from '@/lib/useLocation'
 

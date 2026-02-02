@@ -17,7 +17,7 @@ import {
   CheckCircle,
 } from '@tamagui/lucide-icons'
 
-import { Button, Badge } from '@feednav/ui'
+import { Button, Badge } from '@/ui'
 import {
   useRestaurant,
   useAddFavorite,

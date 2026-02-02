@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { YStack, XStack, Text } from 'tamagui'
 import { Search, Filter, X, Dice5 } from '@tamagui/lucide-icons'
 
-import { RestaurantCard, Button, Badge, Input } from '@feednav/ui'
+import { RestaurantCard, Button, Badge, Input } from '@/ui'
 import { useRestaurants } from '@/lib/queries'
 import { FilterSheet, type FilterState } from '@/components/FilterSheet'
 import { RandomPicker } from '@/components/RandomPicker'

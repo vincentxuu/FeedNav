@@ -56,7 +56,7 @@ const RestaurantImage = styled(Image, {
   } as const,
 })
 
-interface RestaurantCardProps {
+export interface RestaurantCardProps {
   restaurant: Restaurant
   onPress?: () => void
   variant?: 'default' | 'compact'
@@ -151,9 +151,4 @@ export function RestaurantCard({
       {content}
     </CardContainer>
   )
-}
-
-export type RestaurantCardProps = GetProps<typeof CardContainer> & {
-  restaurant: Restaurant
-  onPress?: () => void
 }

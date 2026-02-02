@@ -3,7 +3,7 @@ import { ScrollView } from 'react-native'
 import { Sheet, YStack, XStack, Text, Separator } from 'tamagui'
 import { X, Check } from '@tamagui/lucide-icons'
 
-import { Button, Badge } from '@feednav/ui'
+import { Button, Badge } from '@/ui'
 import { useTags } from '@/lib/queries'
 import { DISTRICTS, CUISINES, PRICE_LEVELS } from '@/lib/constants'
 

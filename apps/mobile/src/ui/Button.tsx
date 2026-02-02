@@ -1,8 +1,8 @@
-import { styled, GetProps } from 'tamagui'
+import { styled, Stack, Text, GetProps } from 'tamagui'
+import type { ReactNode } from 'react'
 
-export const Button = styled('button', {
+const ButtonFrame = styled(Stack, {
   name: 'Button',
-  tag: 'button',
   role: 'button',
   alignItems: 'center',
   justifyContent: 'center',
@@ -10,16 +10,12 @@ export const Button = styled('button', {
   gap: '$2',
   borderRadius: '$4',
   cursor: 'pointer',
-  fontWeight: '600',
-  fontSize: 14,
-  lineHeight: 1,
   borderWidth: 0,
 
   variants: {
     variant: {
       primary: {
         backgroundColor: '$primary',
-        color: 'white',
         hoverStyle: {
           backgroundColor: '$primaryDark',
         },
@@ -30,7 +26,6 @@ export const Button = styled('button', {
       },
       secondary: {
         backgroundColor: '$secondary',
-        color: 'white',
         hoverStyle: {
           backgroundColor: '$secondaryDark',
         },
@@ -43,7 +38,6 @@ export const Button = styled('button', {
         backgroundColor: 'transparent',
         borderWidth: 1,
         borderColor: '$borderColor',
-        color: '$color',
         hoverStyle: {
           backgroundColor: '$backgroundHover',
           borderColor: '$borderColorHover',
@@ -54,7 +48,6 @@ export const Button = styled('button', {
       },
       ghost: {
         backgroundColor: 'transparent',
-        color: '$color',
         hoverStyle: {
           backgroundColor: '$backgroundHover',
         },
@@ -64,7 +57,6 @@ export const Button = styled('button', {
       },
       destructive: {
         backgroundColor: '$error',
-        color: 'white',
         hoverStyle: {
           backgroundColor: '$errorDark',
         },
@@ -78,17 +70,14 @@ export const Button = styled('button', {
       sm: {
         paddingHorizontal: '$3',
         paddingVertical: '$2',
-        fontSize: 12,
       },
       md: {
         paddingHorizontal: '$4',
         paddingVertical: '$2.5',
-        fontSize: 14,
       },
       lg: {
         paddingHorizontal: '$5',
         paddingVertical: '$3',
-        fontSize: 16,
       },
     },
     fullWidth: {
@@ -111,4 +100,43 @@ export const Button = styled('button', {
   },
 })
 
-export type ButtonProps = GetProps<typeof Button>
+const ButtonText = styled(Text, {
+  name: 'ButtonText',
+  fontWeight: '600',
+
+  variants: {
+    variant: {
+      primary: { color: 'white' },
+      secondary: { color: 'white' },
+      outline: { color: '$color' },
+      ghost: { color: '$color' },
+      destructive: { color: 'white' },
+    },
+    size: {
+      sm: { fontSize: 12 },
+      md: { fontSize: 14 },
+      lg: { fontSize: 16 },
+    },
+  } as const,
+
+  defaultVariants: {
+    variant: 'primary',
+    size: 'md',
+  },
+})
+
+export interface ButtonProps extends GetProps<typeof ButtonFrame> {
+  children?: ReactNode
+}
+
+export function Button({ children, variant, size, ...props }: ButtonProps) {
+  return (
+    <ButtonFrame variant={variant} size={size} {...props}>
+      {typeof children === 'string' ? (
+        <ButtonText variant={variant} size={size}>{children}</ButtonText>
+      ) : (
+        children
+      )}
+    </ButtonFrame>
+  )
+}

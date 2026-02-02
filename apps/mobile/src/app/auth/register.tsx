@@ -5,7 +5,7 @@ import { useRouter, Link } from 'expo-router'
 import { YStack, XStack, Text, Separator } from 'tamagui'
 import { Mail, Lock, Eye, EyeOff, User, ArrowLeft } from '@tamagui/lucide-icons'
 
-import { Button, Input } from '@feednav/ui'
+import { Button, Input } from '@/ui'
 import { useAuth } from '@/lib/auth-context'
 import { VALIDATION } from '@/lib/constants'
 

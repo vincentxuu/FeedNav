@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { YStack, Text } from 'tamagui'
 import { Heart } from '@tamagui/lucide-icons'
 
-import { RestaurantCard, Button } from '@feednav/ui'
+import { RestaurantCard, Button } from '@/ui'
 import { useFavorites } from '@/lib/queries'
 import { useAuth } from '@/lib/auth-context'
 import type { Restaurant } from '@feednav/shared'

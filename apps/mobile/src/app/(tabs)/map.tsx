@@ -9,7 +9,7 @@ import { MapPin, Navigation, RefreshCw } from '@tamagui/lucide-icons'
 import { MAP_CONFIG } from '@feednav/shared'
 import { useNearbyRestaurants } from '@/lib/queries'
 import { useLocation } from '@/lib/useLocation'
-import { RestaurantCard, Button } from '@feednav/ui'
+import { RestaurantCard, Button } from '@/ui'
 import type { Restaurant } from '@feednav/shared'
 import { SEMANTIC_COLORS } from '@/lib/constants'
 

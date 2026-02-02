@@ -1,8 +1,7 @@
-import { styled, GetProps } from 'tamagui'
+import { styled, Stack, Text, GetProps } from 'tamagui'
 
-export const Card = styled('div', {
+export const Card = styled(Stack, {
   name: 'Card',
-  tag: 'div',
   backgroundColor: '$surface',
   borderRadius: '$4',
   borderWidth: 1,
@@ -51,39 +50,32 @@ export const Card = styled('div', {
   },
 })
 
-export const CardHeader = styled('div', {
+export const CardHeader = styled(Stack, {
   name: 'CardHeader',
-  tag: 'div',
   flexDirection: 'column',
   gap: '$1.5',
   paddingBottom: '$3',
 })
 
-export const CardTitle = styled('h3', {
+export const CardTitle = styled(Text, {
   name: 'CardTitle',
-  tag: 'h3',
   fontSize: 18,
   fontWeight: '600',
   color: '$color',
-  margin: 0,
 })
 
-export const CardDescription = styled('p', {
+export const CardDescription = styled(Text, {
   name: 'CardDescription',
-  tag: 'p',
   fontSize: 14,
   color: '$textMuted',
-  margin: 0,
 })
 
-export const CardContent = styled('div', {
+export const CardContent = styled(Stack, {
   name: 'CardContent',
-  tag: 'div',
 })
 
-export const CardFooter = styled('div', {
+export const CardFooter = styled(Stack, {
   name: 'CardFooter',
-  tag: 'div',
   flexDirection: 'row',
   alignItems: 'center',
   gap: '$3',
