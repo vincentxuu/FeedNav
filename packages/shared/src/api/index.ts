@@ -72,7 +72,9 @@ export function createApiClient(config: ApiClientConfig) {
         throw new Error('Refresh failed')
       }
 
-      const data = await response.json()
+      const data = (await response.json()) as {
+        data?: { token?: string; refreshToken?: string }
+      }
       const newToken = data.data?.token
 
       if (newToken) {
@@ -135,13 +137,13 @@ export function createApiClient(config: ApiClientConfig) {
         return request<T>(endpoint, options, retryCount + 1)
       }
 
-      const data = await response.json()
+      const data = (await response.json()) as ApiResponse<T> & { message?: string }
 
       if (!response.ok) {
         throw new Error(data.message || `HTTP ${response.status}`)
       }
 
-      return data
+      return data as ApiResponse<T>
     } catch (error) {
       // Network error retry
       if (error instanceof TypeError && retryCount < RETRY_CONFIG.MAX_RETRIES) {

@@ -1,6 +1,9 @@
 # Expo
 .expo/
 dist/
+
+# Tamagui cache
+.tamagui/
 *.jks
 *.p8
 *.p12
