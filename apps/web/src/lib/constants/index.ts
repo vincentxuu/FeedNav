@@ -10,6 +10,7 @@ export const API_ENDPOINTS = {
   },
   RESTAURANTS: {
     SEARCH: '/api/restaurants/search',
+    BOUNDS: '/api/restaurants/bounds',
     NEARBY: '/api/restaurants/nearby',
     TAGS: '/api/restaurants/tags',
     DETAIL: (id: string) => `/api/restaurants/${id}`,

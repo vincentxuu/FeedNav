@@ -72,6 +72,7 @@ app.route('/api/oauth', oauthHandler)
 
 // 餐廳路由 - 部分需要可選認證
 app.post('/api/restaurants/search', optionalAuthMiddleware, restaurantsHandler.search)
+app.post('/api/restaurants/bounds', optionalAuthMiddleware, restaurantsHandler.bounds)
 app.get('/api/restaurants/nearby', optionalAuthMiddleware, restaurantsHandler.nearby)
 app.get('/api/restaurants/tags', restaurantsHandler.tags)
 app.get('/api/restaurants/:id', optionalAuthMiddleware, restaurantsHandler.getById)

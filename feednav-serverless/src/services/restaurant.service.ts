@@ -14,6 +14,14 @@ export interface NearbyParams {
   limit?: number
 }
 
+export interface BoundsParams {
+  minLat: number
+  maxLat: number
+  minLng: number
+  maxLng: number
+  limit?: number
+}
+
 export class RestaurantService {
   private restaurantRepo: RestaurantRepository
 
@@ -73,6 +81,22 @@ export class RestaurantService {
 
   async exists(id: number): Promise<boolean> {
     return this.restaurantRepo.existsById(id)
+  }
+
+  async getByBounds(params: BoundsParams, userId?: string): Promise<Restaurant[]> {
+    const { minLat, maxLat, minLng, maxLng, limit = 200 } = params
+    const safeLimit = Math.min(limit, 500)
+
+    const rows = await this.restaurantRepo.getByBounds(
+      minLat,
+      maxLat,
+      minLng,
+      maxLng,
+      safeLimit,
+      userId
+    )
+
+    return mapToRestaurants(rows, { userId })
   }
 }
 
